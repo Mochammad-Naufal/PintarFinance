@@ -16,12 +16,13 @@ Status Legend:
 ---
 
 ## Phase 1: Database Layer & Authentication
-- [ ] Install & konfigurasi Drizzle ORM + PostgreSQL/Supabase Client
-- [ ] Implementasi skema tabel Drizzle di `src/db/schema/` sesuai `SCHEMA.md` (`users`, `wallets`, `categories`, `savings_goals`, `transactions`, `budgets`)
-- [ ] Buat file export relasi Drizzle & Zod validation schema di `src/types/`
-- [ ] Generate & run database migration pertama
-- [ ] Buat skrip seeder (`src/db/seed.ts`) untuk kategori default sistem & dummy data
-- [ ] Setup Autentikasi Pengguna & Session Context (Supabase Auth / Custom Session)
+- [x] Pilih dan setup database (Supabase PostgreSQL ✅)
+- [x] Setup schema tabel langsung via seed script (`src/db/seed.ts`)
+- [x] Seed default categories (12 kategori: 8 expense + 4 income)
+- [x] Seed demo user, wallets, savings goals, budgets, 15 transaksi
+- [ ] Setup Prisma / Drizzle ORM (opsional — schema sudah live di DB)
+- [ ] Setup authentication (NextAuth v5 / Clerk)
+- [ ] Protected route middleware Auth / Custom Session)
 
 ---
 
