@@ -428,44 +428,57 @@ KEMBALIKAN HANYA OBJEK JSON MURNI SESUAI SCHEMA BERIKUT (TANPA MARKDOWN DAN TANP
   "actionableRecommendations": string[] (Array berisi 2-3 langkah nyata yang bisa segera dilakukan pengguna)
 }`;
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: systemPrompt }],
-                },
-              ],
-              generationConfig: {
-                responseMimeType: "application/json",
-                temperature: 0.2,
-              },
-            }),
-          }
-        );
+      const candidateModels = [
+        "gemini-flash-lite-latest",
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-flash-latest",
+      ];
 
-        if (response.ok) {
-          const resData = await response.json();
-          const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (rawText) {
-            const parsed = JSON.parse(rawText) as AIAnalysisResponse;
-            if (parsed.status && parsed.headline && parsed.summary) {
-              return {
-                success: true,
-                data: {
-                  status: parsed.status,
-                  headline: parsed.headline,
-                  summary: parsed.summary,
-                  keyInsights: Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [],
-                  actionableRecommendations: Array.isArray(parsed.actionableRecommendations) ? parsed.actionableRecommendations : [],
+      for (const modelName of candidateModels) {
+        try {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [{ text: systemPrompt }],
+                  },
+                ],
+                generationConfig: {
+                  responseMimeType: "application/json",
+                  temperature: 0.2,
                 },
-              };
+              }),
+            }
+          );
+
+          if (response.ok) {
+            const resData = await response.json();
+            const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText) {
+              const parsed = JSON.parse(rawText) as AIAnalysisResponse;
+              if (parsed.status && parsed.headline && parsed.summary) {
+                return {
+                  success: true,
+                  data: {
+                    status: parsed.status,
+                    headline: parsed.headline,
+                    summary: parsed.summary,
+                    keyInsights: Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [],
+                    actionableRecommendations: Array.isArray(parsed.actionableRecommendations) ? parsed.actionableRecommendations : [],
+                  },
+                };
+              }
             }
           }
+        } catch {
+          // Try next model
         }
+      }
       } catch (geminiError) {
         console.warn("Gemini API call failed, using intelligent rule-based evaluator:", geminiError);
       }
