@@ -1,89 +1,61 @@
-# PRD — Pintar Finance
+# Product Requirements Document (PRD) — Pintar Finance
 
-> **Status:** Draft | **Last Updated:** 2026-08-26 | **Author:** —
-
----
-
-## 1. Executive Summary
-
-**Pintar Finance** adalah aplikasi manajemen keuangan pribadi berbasis web yang membantu pengguna mencatat pemasukan & pengeluaran, menetapkan anggaran bulanan, dan memvisualisasikan kesehatan finansial mereka secara real-time.
+## 1. Executive Summary & Problem Statement
+Pintar Finance adalah aplikasi pencatatan dan manajemen keuangan pribadi modern berbasis web (mobile-first/PWA) yang mengintegrasikan AI untuk mengotomatisasi input transaksi, analisis anggaran, pelacakan target tabungan impian, dan pembacaan struk belanja.
 
 ---
 
-## 2. Problem Statement
+## 2. User Persona & Scope MVP
 
-Banyak orang Indonesia tidak memiliki sistem pencatatan keuangan yang konsisten, sehingga sulit untuk memahami pola pengeluaran dan merencanakan tabungan. Aplikasi yang ada terlalu kompleks atau tidak mendukung format lokal (mata uang IDR, tanggal Indonesia).
-
----
-
-## 3. Goals & Success Metrics
-
-| Goal | Metric | Target |
-|---|---|---|
-| Kemudahan pencatatan transaksi | Waktu tambah transaksi | < 30 detik |
-| Visibilitas anggaran | % pengguna yang set budget | > 60% |
-| Retensi | DAU/MAU | > 30% |
+### Scope Matrix
+| Status | Fitur |
+| :--- | :--- |
+| **In Scope (MVP)** | Autentikasi Pengguna, Manajemen Multi-Dompet, CRUD Transaksi (Expense, Income, Transfer, Save to Goal), Pintar AI Quick Entry & Receipt OCR, Pos Tabungan & Target Impian (Savings Goals), Alokasi & Pelacak Budget Bulanan, Visualisasi Dashboard. |
+| **Out of Scope (Post-MVP)** | Integrasi Open Banking API langsung, Multi-currency selain IDR, Fitur Hutang/Piutang bertempo, Ekspor SPT Pajak otomatis. |
 
 ---
 
-## 4. User Personas
+## 3. Core Feature Specifications
 
-### 4.1 Andi — Karyawan Muda (25 thn)
-- Ingin tahu ke mana gajinya pergi setiap bulan
-- Sering belanja impulsif, butuh reminder anggaran
-- Menggunakan HP untuk segalanya
+### A. Wallet & Account Management (Multi-Dompet)
+- **Tipe Dompet:** `Cash`, `Bank Account`, `E-Wallet`.
+- **Atribut:** Nama, Tipe, Saldo Saat Ini, Ikon, Warna Aksen.
+- **Aggregator:** Kalkulasi otomatis total *Net Worth* (Dompet Aktif + Total Alokasi Tabungan).
 
-### 4.2 Sari — Ibu Rumah Tangga (35 thn)
-- Mengelola keuangan rumah tangga
-- Perlu kategori belanja yang fleksibel
-- Lebih suka tampilan sederhana
+### B. Pos Tabungan & Target Impian (Savings Goals)
+- **Atribut:** Nama Impian (e.g., "Tabungan Nikah", "Beli Motor"), Target Nominal, Saldo Terkumpul, Target Tanggal, Ikon/Gambar.
+- **Mekanisme Alokasi:** Mutasi dana dari dompet aktif ke pos tabungan (dan sebaliknya saat ditarik).
+- **Progres Visual & AI Insight:** Indikator persentase capaian dan rekomendasi setoran bulanan otomatis berbasis sisa waktu.
 
----
+### C. Transaction Engine
+- **Tipe Transaksi:**
+  - `expense` : Mengurangi saldo dompet sumber, wajib memilih kategori.
+  - `income`  : Menambah saldo dompet tujuan, wajib memilih kategori.
+  - `transfer`: Memindahkan saldo antar-dompet.
+  - `saving`  : Menyetor/menarik dana antara dompet aktif dan target `savings_goal`.
+- **Rincian Transaksi:** Nominal (IDR), Tanggal, Kategori, Dompet, Target Tabungan (jika tipe saving), Catatan, Attachment/Struk.
 
-## 5. Features (MVP)
+### D. Category & Monthly Expense Budgeting
+- **Kategori Bawaan Sistem:** Makanan & Minuman, Transportasi, Belanja, Tagihan, Hiburan, Gaji, Investasi, Tabungan, Lain-lain.
+- **Budget Alerts:** Batas pengeluaran per kategori per bulan (Aman: <75%, Waspada: 75-99%, Overbudget: >=100%).
 
-### P0 — Must Have
-- [ ] Autentikasi (email/password)
-- [ ] CRUD Transaksi (pemasukan & pengeluaran)
-- [ ] Kategori transaksi
-- [ ] Dashboard ringkasan bulanan
-- [ ] Anggaran per kategori
+### E. Pintar AI Engine
+1. **Natural Language Quick Entry:**
+   - Input: Teks bebas / speech-to-text (contoh: *"Tabung 500rb dari BCA ke Tabungan Nikah"*).
+   - Ekstraksi AI: Menghasilkan JSON terstruktur (tipe, nominal, target goal / kategori, dompet).
+   - UX Flow: Tampilkan modal konfirmasi sebelum menyimpan ke database.
+2. **Receipt OCR Scanner:**
+   - Input: Foto/gambar struk belanja.
+   - Ekstraksi AI: Nama merchant, tanggal, total nominal, serta itemized list barang.
 
-### P1 — Should Have
-- [ ] Laporan grafik bulanan/tahunan
-- [ ] Export CSV/PDF
-- [ ] Notifikasi batas anggaran
-
-### P2 — Nice to Have
-- [ ] Rekening/dompet virtual
-- [ ] Import transaksi dari bank
-- [ ] AI insight
-
----
-
-## 6. Non-Goals (MVP)
-
-- Integrasi pembayaran langsung
-- Multi-currency
-- Fitur investasi
+### F. Dashboard & Analytics
+- Ringkasan Eksekutif: Total Net Worth, Arus Kas Bulanan (In vs Out), dan Ringkasan Progres Tabungan Impian.
+- Grafik Arus Kas & Diagram Lingkaran Pengeluaran.
+- Daftar Transaksi Terakhir dengan filter terpadu.
 
 ---
 
-## 7. Technical Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 15 (App Router), TypeScript |
-| Styling | Tailwind CSS v4, shadcn/ui |
-| Validasi | Zod |
-| Database | TBD (Prisma + PostgreSQL / Supabase) |
-| Auth | TBD (NextAuth / Clerk) |
-| Deployment | Vercel |
-
----
-
-## 8. Open Questions
-
-- [ ] Apakah perlu offline mode / PWA?
-- [ ] Database: self-hosted PostgreSQL vs Supabase?
-- [ ] Auth provider: NextAuth v5 vs Clerk?
+## 4. Business Rules & Technical Integrity
+- **Atomic Balance Updates:** Saldo dompet dan progres tabungan wajib dimutasi menggunakan Database Transaction atomic.
+- **Mata Uang:** Standar nominal menggunakan Rupiah (IDR) dalam format integer.
+- **Soft Deletes:** Record transaksi, target tabungan, dan dompet menggunakan `deleted_at`.

@@ -1,187 +1,132 @@
-# SCHEMA.md — Database Schema & Relations
+# Database Schema & Relations — Pintar Finance
 
-> **Status:** Draft | **Last Updated:** 2026-08-26
-> Dokumen ini mendefinisikan struktur database untuk Pintar Finance.
-> Update file ini sebelum melakukan migrasi database apapun.
-
----
-
-## 1. ORM & Database
-
-| Item | Decision |
-|---|---|
-| ORM | Prisma (TBD) |
-| Database | PostgreSQL / Supabase (TBD) |
-| Migrations | Prisma Migrate |
+**Target Database:** PostgreSQL (Supabase)  
+**ORM:** Drizzle ORM (`drizzle-orm`)  
+**Monetary Standard:** Stored as `bigint` integers in Indonesian Rupiah (IDR) to eliminate floating-point precision errors.
 
 ---
 
-## 2. Conventions
+## 1. Table Definitions
 
-- Primary keys: `id` — UUID (`cuid()` via Prisma)
-- Timestamps: `createdAt`, `updatedAt` (auto-managed)
-- Soft delete: `deletedAt` nullable timestamp
-- **Currency amounts stored as INTEGER (in sen/cents)**: Rp 10.000 → `10000`
-- Dates stored as `DateTime` (UTC)
-- Enums defined in Prisma schema
+### A. `users`
+Tabel profil pengguna (sinkron dengan Supabase Auth atau custom session).
+- `id` : `uuid` (Primary Key, default `gen_random_uuid()`)
+- `email` : `varchar(255)` (Unique, Not Null)
+- `name` : `varchar(100)` (Not Null)
+- `avatar_url` : `text` (Nullable)
+- `created_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `updated_at` : `timestamp with time zone` (Default `now()`, Not Null)
 
----
+### B. `wallets` (Dompet & Rekening)
+Tempat penyimpanan dana (Bank, E-Wallet, Kas Tunai).
+- `id` : `uuid` (Primary Key, default `gen_random_uuid()`)
+- `user_id` : `uuid` (Foreign Key -> `users.id` on delete cascade, Not Null)
+- `name` : `varchar(100)` (Not Null) — e.g., "BCA Utama", "GoPay", "Dompet Fisik"
+- `type` : `varchar(30)` (Not Null) — Enum: `'bank' | 'ewallet' | 'cash'`
+- `balance` : `bigint` (Default `0`, Not Null) — Saldo berjalan dalam IDR
+- `color` : `varchar(20)` (Default `'#10b981'`) — Hex warna kartu dompet
+- `icon` : `varchar(50)` (Default `'wallet'`) — Nama icon Lucide
+- `is_active` : `boolean` (Default `true`, Not Null)
+- `created_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `updated_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `deleted_at` : `timestamp with time zone` (Nullable, untuk soft delete)
 
-## 3. Entity Relationship Diagram
+### C. `categories` (Kategori Transaksi)
+Kategori pengeluaran dan pemasukan.
+- `id` : `uuid` (Primary Key, default `gen_random_uuid()`)
+- `user_id` : `uuid` (Foreign Key -> `users.id` on delete cascade, Nullable) — `null` jika kategori default sistem
+- `name` : `varchar(100)` (Not Null) — e.g., "Makanan & Minuman", "Gaji", "Transportasi"
+- `type` : `varchar(20)` (Not Null) — Enum: `'expense' | 'income'`
+- `icon` : `varchar(50)` (Not Null, default `'tag'`) — Nama icon Lucide
+- `color` : `varchar(20)` (Default `'#64748b'`)
+- `created_at` : `timestamp with time zone` (Default `now()`, Not Null)
 
-```
-User ──────────── Account (1:N)
- │
- ├──────────────── Transaction (1:N)
- │                     │
- │                     └── Category (N:1)
- │
- ├──────────────── Category (1:N, custom per user)
- │
- └──────────────── Budget (1:N)
-                       │
-                       └── Category (N:1)
-```
+### D. `savings_goals` (Pos Tabungan & Impian)
+Target dana menabung untuk impian/tujuan tertentu (misal: nikah, beli kendaraan, dana darurat).
+- `id` : `uuid` (Primary Key, default `gen_random_uuid()`)
+- `user_id` : `uuid` (Foreign Key -> `users.id` on delete cascade, Not Null)
+- `name` : `varchar(150)` (Not Null) — e.g., "Dana Nikah", "Beli Motor NMAX"
+- `target_amount` : `bigint` (Not Null) — Target nominal dalam IDR
+- `current_amount`: `bigint` (Default `0`, Not Null) — Akumulasi dana terkumpul
+- `target_date` : `date` (Nullable) — Tenggat waktu pencapaian
+- `icon` : `varchar(50)` (Default `'target'`)
+- `color` : `varchar(20)` (Default `'#3b82f6'`)
+- `is_completed` : `boolean` (Default `false`, Not Null)
+- `created_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `updated_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `deleted_at` : `timestamp with time zone` (Nullable)
 
----
+### E. `transactions` (Ledger Mutasi Keuangan)
+Buku besar seluruh mutasi uang.
+- `id` : `uuid` (Primary Key, default `gen_random_uuid()`)
+- `user_id` : `uuid` (Foreign Key -> `users.id` on delete cascade, Not Null)
+- `wallet_id` : `uuid` (Foreign Key -> `wallets.id` on delete cascade, Not Null) — Dompet sumber
+- `destination_wallet_id`: `uuid` (Foreign Key -> `wallets.id`, Nullable) — Khusus mutasi transfer
+- `category_id` : `uuid` (Foreign Key -> `categories.id`, Nullable) — Wajib untuk expense/income
+- `savings_goal_id` : `uuid` (Foreign Key -> `savings_goals.id`, Nullable) — Khusus mutasi alokasi tabungan
+- `type` : `varchar(20)` (Not Null) — Enum: `'expense' | 'income' | 'transfer' | 'saving'`
+- `amount` : `bigint` (Not Null) — Nominal transaksi dalam IDR (selalu bernilai positif)
+- `admin_fee` : `bigint` (Default `0`, Not Null) — Biaya admin tambahan (misal antar-bank)
+- `transaction_date`: `timestamp with time zone` (Default `now()`, Not Null)
+- `description` : `text` (Nullable) — Catatan / Nama merchant
+- `receipt_url` : `text` (Nullable) — URL lampiran foto struk
+- `created_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `updated_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `deleted_at` : `timestamp with time zone` (Nullable)
 
-## 4. Tables / Models
-
-### User
-```prisma
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  passwordHash  String?
-  avatar        String?
-  currency      String    @default("IDR")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  transactions  Transaction[]
-  categories    Category[]
-  budgets       Budget[]
-  accounts      Account[]
-}
-```
-
-### Account (Rekening/Dompet)
-```prisma
-model Account {
-  id          String      @id @default(cuid())
-  userId      String
-  name        String      // e.g. "BCA Tabungan", "Gopay"
-  type        AccountType
-  balance     Int         @default(0)  // stored in sen
-  color       String?
-  icon        String?
-  isDefault   Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
-
-  user         User          @relation(fields: [userId], references: [id])
-  transactions Transaction[]
-}
-
-enum AccountType {
-  CASH
-  BANK
-  CREDIT_CARD
-  EWALLET
-  INVESTMENT
-  OTHER
-}
-```
-
-### Category
-```prisma
-model Category {
-  id        String           @id @default(cuid())
-  userId    String?          // null = system default category
-  name      String
-  type      TransactionType  // INCOME | EXPENSE
-  icon      String?
-  color     String?
-  isSystem  Boolean          @default(false)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  user         User?         @relation(fields: [userId], references: [id])
-  transactions Transaction[]
-  budgets      Budget[]
-}
-```
-
-### Transaction
-```prisma
-model Transaction {
-  id          String          @id @default(cuid())
-  userId      String
-  accountId   String
-  categoryId  String
-  type        TransactionType
-  amount      Int             // in sen, always positive
-  note        String?
-  date        DateTime
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  deletedAt   DateTime?
-
-  user     User     @relation(fields: [userId], references: [id])
-  account  Account  @relation(fields: [accountId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
-}
-
-enum TransactionType {
-  INCOME
-  EXPENSE
-  TRANSFER
-}
-```
-
-### Budget
-```prisma
-model Budget {
-  id         String   @id @default(cuid())
-  userId     String
-  categoryId String
-  amount     Int      // limit in sen
-  month      Int      // 1–12
-  year       Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user     User     @relation(fields: [userId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
-
-  @@unique([userId, categoryId, month, year])
-}
-```
+### F. `budgets` (Batas Anggaran Bulanan)
+Batas pengeluaran per kategori per bulan kalender.
+- `id` : `uuid` (Primary Key, default `gen_random_uuid()`)
+- `user_id` : `uuid` (Foreign Key -> `users.id` on delete cascade, Not Null)
+- `category_id` : `uuid` (Foreign Key -> `categories.id` on delete cascade, Not Null)
+- `period` : `varchar(7)` (Not Null) — Format: `'YYYY-MM'` (e.g., `'2026-08'`)
+- `limit_amount` : `bigint` (Not Null) — Batas limit pengeluaran bulanan dalam IDR
+- `created_at` : `timestamp with time zone` (Default `now()`, Not Null)
+- `updated_at` : `timestamp with time zone` (Default `now()`, Not Null)
 
 ---
 
-## 5. Indexes (Planned)
+## 2. Entity Relations & Foreign Keys
 
-| Table | Index | Reason |
-|---|---|---|
-| `Transaction` | `(userId, date DESC)` | Dashboard queries sorted by date |
-| `Transaction` | `(userId, categoryId, date)` | Category reports |
-| `Budget` | `(userId, month, year)` | Monthly budget lookup |
+users (1) ────< (N) wallets
+users (1) ────< (N) categories
+users (1) ────< (N) savings_goals
+users (1) ────< (N) transactions
+users (1) ────< (N) budgets
+
+wallets (1) ────< (N) transactions (as source wallet)
+wallets (1) ────< (N) transactions (as destination wallet)
+
+categories (1) ────< (N) transactions
+categories (1) ────< (N) budgets
+
+savings_goals (1) ────< (N) transactions (as saving allocation target)
+
 
 ---
 
-## 6. Seed Data (Default Categories)
+## 3. Database Indexes (Performance Optimization)
 
-**Expense categories:** Makanan & Minuman, Transportasi, Belanja, Hiburan, Tagihan & Utilitas, Kesehatan, Pendidikan, Lainnya
-
-**Income categories:** Gaji, Freelance, Investasi, Bonus, Hadiah, Lainnya
+Untuk menjaga performa query analitik tetap instan:
+- `idx_transactions_user_date` on `transactions (user_id, transaction_date DESC)`
+- `idx_transactions_wallet` on `transactions (wallet_id)`
+- `idx_transactions_category` on `transactions (category_id)`
+- `idx_budgets_user_period` on `budgets (user_id, period)`
+- `idx_savings_user` on `savings_goals (user_id)`
 
 ---
 
-## 7. Open Questions
+## 4. Financial Mutation Ledger Rules (ACID Transactions)
 
-- [ ] Apakah perlu tabel `Transfer` terpisah atau cukup dua baris Transaction?
-- [ ] Recurring transaction — model terpisah atau field pada Transaction?
-- [ ] Attachment/foto struk — simpan di storage mana (S3 / Supabase Storage)?
+Setiap mutasi saldo wajib dijalankan di dalam blok `db.transaction(...)`:
+
+1. **`expense`:**
+   - Kurangi `wallets.balance` dompet sumber sebesar `(amount + admin_fee)`.
+2. **`income`:**
+   - Tambah `wallets.balance` dompet tujuan sebesar `amount`.
+3. **`transfer`:**
+   - Kurangi `wallets.balance` dompet sumber sebesar `(amount + admin_fee)`.
+   - Tambah `wallets.balance` dompet tujuan sebesar `amount`.
+4. **`saving`:**
+   - Kurangi `wallets.balance` dompet sumber sebesar `amount`.
+   - Tambah `savings_goals.current_amount` pada target tabungan sebesar `amount`.
