@@ -18,7 +18,10 @@ export function Header() {
         <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-none">
           Selamat Datang 👋
         </h1>
-        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize">
+        <p
+          suppressHydrationWarning
+          className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize"
+        >
           {today}
         </p>
       </div>
@@ -46,8 +49,9 @@ export function Header() {
           <Bell className="w-4 h-4" strokeWidth={1.75} />
         </button>
 
-        {/* Theme toggle */}
+        {/* Theme toggle with hydration suppression */}
         <button
+          suppressHydrationWarning
           onClick={toggle}
           className={cn(
             "p-2 rounded-lg text-zinc-600 dark:text-zinc-400",
@@ -56,10 +60,10 @@ export function Header() {
           )}
           aria-label={theme === "dark" ? "Mode terang" : "Mode gelap"}
         >
-          {theme === "dark" ? (
-            <Sun className="w-4 h-4 text-amber-400" strokeWidth={1.75} />
-          ) : (
+          {theme === "light" ? (
             <Moon className="w-4 h-4 text-zinc-700" strokeWidth={1.75} />
+          ) : (
+            <Sun className="w-4 h-4 text-amber-400" strokeWidth={1.75} />
           )}
         </button>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,39 +18,47 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggle: () => {},
 });
 
-// ─── Lazy initializer (runs once on client mount) ─────────────────────────────
+// ─── useSyncExternalStore Handlers (React 19 Idiomatic) ───────────────────────
 
-function getInitialTheme(): Theme {
-  // Guard for SSR — window is not available on server
+function subscribe(callback: () => void) {
+  window.addEventListener("storage", callback);
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  mediaQuery.addEventListener("change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    mediaQuery.removeEventListener("change", callback);
+  };
+}
+
+function getSnapshot(): Theme {
   if (typeof window === "undefined") return "dark";
-
   const stored = localStorage.getItem("pf-theme") as Theme | null;
   if (stored === "dark" || stored === "light") return stored;
-
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
 }
 
+function getServerSnapshot(): Theme {
+  return "dark";
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Lazy initializer — reads localStorage/system pref synchronously at first
-  // render without triggering a setState-in-effect lint violation.
-  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  // Sync the .dark class on <html> whenever theme changes (DOM = external system).
-  // This is the correct use of useEffect: updating an external system, not state.
+  // Sync DOM class
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
   const toggle = () => {
-    setTheme((prev) => {
-      const next: Theme = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("pf-theme", next);
-      return next;
-    });
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    localStorage.setItem("pf-theme", next);
+    document.documentElement.classList.toggle("dark", next === "dark");
+    // Trigger storage event so useSyncExternalStore updates synchronously
+    window.dispatchEvent(new Event("storage"));
   };
 
   return (
