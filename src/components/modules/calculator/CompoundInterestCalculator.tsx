@@ -22,75 +22,87 @@ interface YearlyData {
 }
 
 export function CompoundInterestCalculator() {
-  const [principal, setPrincipal] = useState<number>(10000000);
-  const [monthlyContribution, setMonthlyContribution] = useState<number>(1500000);
-  const [annualRate, setAnnualRate] = useState<number>(10);
-  const [years, setYears] = useState<number>(10);
+  const [principal, setPrincipal] = useState<string>("10000000");
+  const [monthlyContribution, setMonthlyContribution] = useState<string>("1500000");
+  const [annualRate, setAnnualRate] = useState<string>("10");
+  const [years, setYears] = useState<string>("10");
   const [frequency, setFrequency] = useState<"monthly" | "annually">("monthly");
   const [showTable, setShowTable] = useState<boolean>(false);
 
   // Calculation Engine
-  const { yearlyBreakdown, finalTotalValue, finalInvested, finalInterest, multiplier } =
-    useMemo(() => {
-      const P = Math.max(0, principal);
-      const PMT = Math.max(0, monthlyContribution);
-      const r = Math.max(0, annualRate) / 100;
-      const t = Math.max(1, Math.min(50, years));
-      const n = frequency === "monthly" ? 12 : 1;
+  const {
+    P_val,
+    PMT_val,
+    t_val,
+    yearlyBreakdown,
+    finalTotalValue,
+    finalInvested,
+    finalInterest,
+    multiplier,
+  } = useMemo(() => {
+    const P = Math.max(0, parseFloat(principal.replace(/[^0-9.]/g, "")) || 0);
+    const PMT = Math.max(0, parseFloat(monthlyContribution.replace(/[^0-9.]/g, "")) || 0);
+    const r = Math.max(0, parseFloat(annualRate.replace(/[^0-9.]/g, "")) || 0) / 100;
+    const t = Math.max(1, Math.min(50, parseInt(years.replace(/[^0-9]/g, ""), 10) || 1));
+    const n = frequency === "monthly" ? 12 : 1;
 
-      const breakdown: YearlyData[] = [];
+    const breakdown: YearlyData[] = [];
 
-      for (let k = 1; k <= t; k++) {
-        let totalVal = 0;
-        const totalInvested = P + PMT * 12 * k;
+    for (let k = 1; k <= t; k++) {
+      let totalVal = 0;
+      const totalInvested = P + PMT * 12 * k;
 
-        if (r === 0) {
-          totalVal = totalInvested;
+      if (r === 0) {
+        totalVal = totalInvested;
+      } else {
+        // Future value of principal
+        const principalFV = P * Math.pow(1 + r / n, n * k);
+
+        // Future value of regular monthly contributions
+        let contributionsFV = 0;
+        if (frequency === "monthly") {
+          contributionsFV = PMT * ((Math.pow(1 + r / 12, 12 * k) - 1) / (r / 12));
         } else {
-          // Future value of principal
-          const principalFV = P * Math.pow(1 + r / n, n * k);
-
-          // Future value of regular monthly contributions
-          let contributionsFV = 0;
-          if (frequency === "monthly") {
-            contributionsFV = PMT * ((Math.pow(1 + r / 12, 12 * k) - 1) / (r / 12));
-          } else {
-            const annualContribution = PMT * 12;
-            contributionsFV = annualContribution * ((Math.pow(1 + r, k) - 1) / r);
-          }
-
-          totalVal = Math.round(principalFV + contributionsFV);
+          const annualContribution = PMT * 12;
+          contributionsFV = annualContribution * ((Math.pow(1 + r, k) - 1) / r);
         }
 
-        const totalInterest = Math.max(0, totalVal - totalInvested);
-
-        breakdown.push({
-          year: k,
-          totalInvested,
-          totalInterest,
-          totalValue: totalVal,
-        });
+        totalVal = Math.round(principalFV + contributionsFV);
       }
 
-      const finalItem = breakdown[breakdown.length - 1] || {
-        totalInvested: P,
-        totalInterest: 0,
-        totalValue: P,
-      };
+      const totalInterest = Math.max(0, totalVal - totalInvested);
 
-      const finalVal = finalItem.totalValue;
-      const finalInv = finalItem.totalInvested;
-      const finalInt = finalItem.totalInterest;
-      const mult = finalInv > 0 ? (finalVal / finalInv).toFixed(1) : "1.0";
+      breakdown.push({
+        year: k,
+        totalInvested,
+        totalInterest,
+        totalValue: totalVal,
+      });
+    }
 
-      return {
-        yearlyBreakdown: breakdown,
-        finalTotalValue: finalVal,
-        finalInvested: finalInv,
-        finalInterest: finalInt,
-        multiplier: mult,
-      };
-    }, [principal, monthlyContribution, annualRate, years, frequency]);
+    const finalItem = breakdown[breakdown.length - 1] || {
+      totalInvested: P,
+      totalInterest: 0,
+      totalValue: P,
+    };
+
+    const finalVal = finalItem.totalValue;
+    const finalInv = finalItem.totalInvested;
+    const finalInt = finalItem.totalInterest;
+    const mult = finalInv > 0 ? (finalVal / finalInv).toFixed(1) : "1.0";
+
+    return {
+      P_val: P,
+      PMT_val: PMT,
+      r_val: r,
+      t_val: t,
+      yearlyBreakdown: breakdown,
+      finalTotalValue: finalVal,
+      finalInvested: finalInv,
+      finalInterest: finalInt,
+      multiplier: mult,
+    };
+  }, [principal, monthlyContribution, annualRate, years, frequency]);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -126,38 +138,80 @@ export function CompoundInterestCalculator() {
 
           {/* Modal Awal (Principal) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
-              <span>Modal Awal / Pokok (IDR)</span>
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-zinc-700 dark:text-zinc-300">
+                Modal Awal / Pokok (IDR)
+              </label>
               <span className="font-mono text-zinc-500 font-semibold">
-                {formatCurrency(principal)}
+                {formatCurrency(P_val)}
               </span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="500000"
-              value={principal}
-              onChange={(e) => setPrincipal(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono focus:outline-none focus:border-emerald-500"
-            />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 font-mono">
+                Rp
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={principal}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setPrincipal(e.target.value)}
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            {/* Quick Chips */}
+            <div className="flex items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
+              {[0, 5000000, 10000000, 25000000, 50000000].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setPrincipal(String(preset))}
+                  className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[10px] font-mono text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shrink-0"
+                >
+                  {preset === 0 ? "Nol" : `${preset / 1000000}Jt`}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Setoran Bulanan (PMT) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center justify-between">
-              <span>Setoran Rutin Bulanan (IDR)</span>
+            <div className="flex items-center justify-between text-xs">
+              <label className="font-medium text-zinc-700 dark:text-zinc-300">
+                Setoran Rutin Bulanan (IDR)
+              </label>
               <span className="font-mono text-zinc-500 font-semibold">
-                {formatCurrency(monthlyContribution)}
+                {formatCurrency(PMT_val)}
               </span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="100000"
-              value={monthlyContribution}
-              onChange={(e) => setMonthlyContribution(Number(e.target.value))}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono focus:outline-none focus:border-emerald-500"
-            />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 font-mono">
+                Rp
+              </span>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={monthlyContribution}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setMonthlyContribution(e.target.value)}
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            {/* Quick Chips */}
+            <div className="flex items-center gap-1.5 pt-1 overflow-x-auto no-scrollbar">
+              {[500000, 1000000, 1500000, 3000000, 5000000].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setMonthlyContribution(String(preset))}
+                  className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[10px] font-mono text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shrink-0"
+                >
+                  {preset >= 1000000 ? `${preset / 1000000}Jt` : `${preset / 1000}Rb`}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Imbal Hasil & Durasi (2-col grid) */}
@@ -168,14 +222,26 @@ export function CompoundInterestCalculator() {
                 <span>Return / Thn (%)</span>
               </label>
               <input
-                type="number"
-                min="0"
-                max="50"
-                step="0.5"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
                 value={annualRate}
-                onChange={(e) => setAnnualRate(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono focus:outline-none focus:border-emerald-500"
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setAnnualRate(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
               />
+              <div className="flex items-center gap-1 pt-0.5">
+                {[6, 10, 15].map((rate) => (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => setAnnualRate(String(rate))}
+                    className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[9px] font-mono text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200"
+                  >
+                    {rate}%
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -184,13 +250,26 @@ export function CompoundInterestCalculator() {
                 <span>Durasi (Tahun)</span>
               </label>
               <input
-                type="number"
-                min="1"
-                max="40"
+                type="text"
+                inputMode="numeric"
+                placeholder="1"
                 value={years}
-                onChange={(e) => setYears(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono focus:outline-none focus:border-emerald-500"
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setYears(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
               />
+              <div className="flex items-center gap-1 pt-0.5">
+                {[5, 10, 20].map((yr) => (
+                  <button
+                    key={yr}
+                    type="button"
+                    onClick={() => setYears(String(yr))}
+                    className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[9px] font-mono text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200"
+                  >
+                    {yr}th
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -233,7 +312,7 @@ export function CompoundInterestCalculator() {
             <div className="flex items-center justify-between text-xs text-zinc-400">
               <span className="uppercase font-semibold tracking-wider flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                Estimasi Total Dana Akhir ({years} Tahun)
+                Estimasi Total Dana Akhir ({t_val} Tahun)
               </span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">
                 Tumbuh {multiplier}x Lipat
