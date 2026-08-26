@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import "./globals.css";
 
@@ -37,18 +38,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
-      <head>
-        {/*
-         * Anti-flash script: runs synchronously before React hydration.
-         * Reads localStorage "pf-theme" (or system preference) and
-         * toggles `.dark` on <html> immediately to prevent theme flicker.
-         */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('pf-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})()`,
-          }}
-        />
-      </head>
       <body
         className={[
           "min-h-full",
@@ -59,6 +48,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           "selection:bg-emerald-500 selection:text-white",
         ].join(" ")}
       >
+        {/* Anti-flash theme initialization via official Next.js Script */}
+        <Script
+          id="theme-initializer"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('pf-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})()`,
+          }}
+        />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
