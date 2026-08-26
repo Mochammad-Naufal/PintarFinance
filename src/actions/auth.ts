@@ -6,6 +6,12 @@ import { createClient } from "@/lib/supabase/server";
 import { ensureUserOnboarding } from "@/lib/supabase/user";
 import { type ActionResult } from "@/types/finance";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://pintarfinance.id"
+    : "http://localhost:3000");
+
 export async function signInWithPassword(formData: {
   email: string;
   password: string;
@@ -20,12 +26,17 @@ export async function signInWithPassword(formData: {
     });
 
     if (error) {
+      let errorMessage = error.message;
+      if (error.message === "Invalid login credentials") {
+        errorMessage = "Email atau kata sandi tidak cocok.";
+      } else if (error.message.toLowerCase().includes("email not confirmed")) {
+        errorMessage =
+          "Email belum dikonfirmasi. Silakan periksa inbox/spam email Anda untuk mengklik tautan verifikasi atau gunakan tombol kirim ulang.";
+      }
+
       return {
         success: false,
-        error:
-          error.message === "Invalid login credentials"
-            ? "Email atau kata sandi tidak cocok"
-            : error.message,
+        error: errorMessage,
       };
     }
 
@@ -57,7 +68,7 @@ export async function signInWithOtp(email: string): Promise<ActionResult<{ sent:
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/dashboard`,
+        emailRedirectTo: `${SITE_URL}/auth/callback`,
       },
     });
 
@@ -69,6 +80,30 @@ export async function signInWithOtp(email: string): Promise<ActionResult<{ sent:
   } catch (err) {
     console.error("signInWithOtp error:", err);
     return { success: false, error: "Gagal mengirim link login email" };
+  }
+}
+
+export async function resendConfirmationEmail(email: string): Promise<ActionResult> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${SITE_URL}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error("resendConfirmationEmail error:", err);
+    return { success: false, error: "Gagal mengirim ulang email konfirmasi" };
   }
 }
 
@@ -85,6 +120,7 @@ export async function signUp(formData: {
       email: formData.email.trim(),
       password: formData.password,
       options: {
+        emailRedirectTo: `${SITE_URL}/auth/callback`,
         data: {
           full_name: formData.name.trim(),
           name: formData.name.trim(),

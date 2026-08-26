@@ -3,8 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, CheckCircle2, KeyRound, Loader2, Lock, Mail, Sparkles } from "lucide-react";
-import { signInWithOtp, signInWithPassword } from "@/actions/auth";
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  KeyRound,
+  Loader2,
+  Lock,
+  Mail,
+  Send,
+  Sparkles,
+} from "lucide-react";
+import { resendConfirmationEmail, signInWithOtp, signInWithPassword } from "@/actions/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,12 +22,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+
+  const isEmailNotConfirmed =
+    error &&
+    (error.toLowerCase().includes("belum dikonfirmasi") ||
+      error.toLowerCase().includes("email not confirmed"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setResendSuccess(false);
     setIsLoading(true);
 
     try {
@@ -42,6 +60,25 @@ export default function LoginPage() {
       setError("Terjadi kesalahan teknis");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email || isResending) return;
+    setIsResending(true);
+    setResendSuccess(false);
+    try {
+      const res = await resendConfirmationEmail(email);
+      if (res.success) {
+        setResendSuccess(true);
+      } else {
+        setError(res.error ?? "Gagal mengirim ulang email konfirmasi");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Terjadi kesalahan teknis saat mengirim email");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -95,9 +132,46 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {error && (
+      {/* General Error or Email Unconfirmed Box */}
+      {error && !isEmailNotConfirmed && (
         <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
           {error}
+        </div>
+      )}
+
+      {isEmailNotConfirmed && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <p className="font-semibold">Email Belum Dikonfirmasi</p>
+              <p className="text-amber-800 dark:text-amber-400 text-[11px] leading-relaxed">
+                Supabase memerlukan verifikasi email untuk akun baru. Silakan periksa kotak masuk atau folder spam di email Anda (<strong>{email}</strong>) dan klik tautan konfirmasi.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-amber-500/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <button
+              type="button"
+              disabled={isResending || resendSuccess}
+              onClick={handleResendConfirmation}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 dark:bg-amber-500 hover:bg-amber-500 dark:hover:bg-amber-400 text-white font-semibold text-xs transition-all disabled:opacity-50"
+            >
+              {isResending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              <span>{resendSuccess ? "Email Terkirim!" : "Kirim Ulang Email Konfirmasi"}</span>
+            </button>
+
+            {resendSuccess && (
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                ✓ Link verifikasi baru telah dikirim!
+              </span>
+            )}
+          </div>
         </div>
       )}
 
