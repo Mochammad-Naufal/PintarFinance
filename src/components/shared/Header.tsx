@@ -12,22 +12,22 @@ export function Header() {
   const today = formatDate(new Date(), "EEEE, d MMMM yyyy");
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-4 h-16 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800/80 transition-colors duration-150">
+    <header className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-16 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800/80 transition-colors duration-150">
       {/* Left: Greeting + date */}
-      <div className="flex flex-col justify-center">
-        <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-none">
+      <div className="flex flex-col justify-center min-w-0 pr-2">
+        <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-none truncate">
           Selamat Datang 👋
         </h1>
         <p
           suppressHydrationWarning
-          className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize"
+          className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize truncate"
         >
           {today}
         </p>
       </div>
 
       {/* Right: Actions row */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* Quick AI Trigger */}
         <Link
           href="/ai"
@@ -68,7 +68,7 @@ export function Header() {
         </button>
 
         {/* User avatar */}
-        <div className="flex items-center gap-2.5 pl-2 ml-1 border-l border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center gap-2 pl-2 sm:pl-2.5 ml-1 border-l border-zinc-200 dark:border-zinc-800">
           <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">D</span>
           </div>

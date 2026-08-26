@@ -134,10 +134,10 @@ export function TransactionList({
   };
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto">
+    <div className="space-y-5 max-w-full min-w-0">
       {/* Top Filter Bar + Action Buttons */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex-1">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 min-w-0">
+        <div className="flex-1 min-w-0">
           <TransactionFilter
             selectedType={selectedType}
             onTypeChange={setSelectedType}
@@ -149,21 +149,21 @@ export function TransactionList({
           />
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
           {/* Export CSV Trigger */}
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 px-3.5 py-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 active:scale-[0.98] transition-all shadow-xs"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 active:scale-[0.98] transition-all shadow-xs shrink-0"
             aria-label="Ekspor CSV"
           >
             <Download className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-            <span className="hidden sm:inline">Ekspor CSV</span>
+            <span>Ekspor CSV</span>
           </button>
 
           {/* Add Transaction Button */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white font-semibold text-xs hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-xs"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 dark:bg-emerald-500 text-white font-semibold text-xs hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-xs shrink-0"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
             <span>Catat Transaksi</span>
@@ -193,9 +193,9 @@ export function TransactionList({
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {groupedTransactions.map(([dateKey, group]) => (
-            <div key={dateKey} className="space-y-2.5">
+            <div key={dateKey} className="space-y-2.5 min-w-0">
               {/* Date Section Header */}
               <div className="flex items-center justify-between px-1">
                 <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -216,7 +216,7 @@ export function TransactionList({
               </div>
 
               {/* Transaction Items */}
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 {group.items.map((tx) => (
                   <TransactionItem
                     key={tx.id}
