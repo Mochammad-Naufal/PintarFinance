@@ -15,9 +15,10 @@ export const sql =
   globalForDb.sql ??
   postgres(DATABASE_URL, {
     ssl: "require",
-    max: 10,
+    max: 20,
     idle_timeout: 20,
     connect_timeout: 10,
+    prepare: false, // Required for Supabase Transaction Pooler on port 6543
   });
 
 if (process.env.NODE_ENV !== "production") {

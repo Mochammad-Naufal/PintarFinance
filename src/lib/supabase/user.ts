@@ -9,6 +9,8 @@ export interface AuthenticatedUser {
   isDemo: boolean;
 }
 
+const onboardedUserCache = new Set<string>();
+
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
   try {
     const cookieStore = await cookies();
@@ -25,8 +27,10 @@ export async function getCurrentUser(): Promise<AuthenticatedUser> {
         user.email?.split("@")[0] ||
         "Pengguna";
 
-      // Ensure user record exists in public.users
-      await ensureUserOnboarding(user.id, user.email ?? "user@pintarfinance.com", name);
+      // Ensure user record exists in public.users (cached per process)
+      if (!onboardedUserCache.has(user.id)) {
+        await ensureUserOnboarding(user.id, user.email ?? "user@pintarfinance.com", name);
+      }
 
       return {
         id: user.id,
@@ -113,6 +117,8 @@ export async function ensureUserOnboarding(
         `;
       }
     }
+
+    onboardedUserCache.add(userId);
   } catch (error) {
     console.error("Error in ensureUserOnboarding:", error);
   }
