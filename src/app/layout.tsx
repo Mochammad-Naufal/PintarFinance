@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import "./globals.css";
 
@@ -68,14 +67,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           "selection:bg-emerald-500 selection:text-white",
         ].join(" ")}
       >
-        {/* Anti-flash theme initialization via official Next.js Script */}
-        <Script
-          id="theme-initializer"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('pf-theme');var d=t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})()`,
-          }}
-        />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
