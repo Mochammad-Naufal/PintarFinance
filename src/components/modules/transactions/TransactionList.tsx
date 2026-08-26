@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Plus, Receipt } from "lucide-react";
+import { ArrowRight, FileText, Plus, Receipt } from "lucide-react";
 import {
   type Category,
   type SavingsGoal,
@@ -14,8 +14,11 @@ import { TransactionItem } from "./TransactionItem";
 import { TransactionFilter } from "./TransactionFilter";
 import { TransactionModal } from "./TransactionModal";
 import { ExportModal } from "./ExportModal";
+import { AllTransactionsModal } from "./AllTransactionsModal";
 import { createTransaction, deleteTransaction } from "@/actions/transactions";
 import { formatCurrency, formatDate } from "@/lib/utils";
+
+const DISPLAY_LIMIT = 15;
 
 interface TransactionListProps {
   initialTransactions: Transaction[];
@@ -40,6 +43,7 @@ export function TransactionList({
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isAllModalOpen, setIsAllModalOpen] = useState(false);
 
   // Client-side filtering for fast response
   const filteredTransactions = useMemo(() => {
@@ -68,11 +72,16 @@ export function TransactionList({
     });
   }, [transactions, selectedType, selectedWallet, searchQuery]);
 
-  // Group transactions by date string (YYYY-MM-DD)
+  // Display limited subset on main view for fast rendering & clean UI
+  const limitedTransactions = useMemo(() => {
+    return filteredTransactions.slice(0, DISPLAY_LIMIT);
+  }, [filteredTransactions]);
+
+  // Group limited transactions by date string (YYYY-MM-DD)
   const groupedTransactions = useMemo(() => {
     const groups: Record<string, { date: string; items: Transaction[]; net: number }> = {};
 
-    for (const tx of filteredTransactions) {
+    for (const tx of limitedTransactions) {
       const dateKey = tx.transaction_date.slice(0, 10);
       if (!groups[dateKey]) {
         groups[dateKey] = {
@@ -92,7 +101,7 @@ export function TransactionList({
     return Object.entries(groups).sort(
       ([a], [b]) => new Date(b).getTime() - new Date(a).getTime()
     );
-  }, [filteredTransactions]);
+  }, [limitedTransactions]);
 
   const handleSave = async (data: TransactionInput) => {
     const res = await createTransaction(data);
@@ -150,14 +159,14 @@ export function TransactionList({
         </div>
 
         <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
-          {/* Export CSV Trigger */}
+          {/* Export PDF Trigger */}
           <button
             onClick={() => setIsExportModalOpen(true)}
             className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 active:scale-[0.98] transition-all shadow-xs shrink-0"
-            aria-label="Ekspor CSV"
+            aria-label="Ekspor Laporan PDF"
           >
-            <Download className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-            <span>Ekspor CSV</span>
+            <FileText className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+            <span>Ekspor PDF</span>
           </button>
 
           {/* Add Transaction Button */}
@@ -171,7 +180,7 @@ export function TransactionList({
         </div>
       </div>
 
-      {/* Transactions Grouped by Date */}
+      {/* Transactions Grouped by Date (Limited 15) */}
       {groupedTransactions.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-white dark:bg-zinc-900/40 border border-dashed border-zinc-300 dark:border-zinc-800 text-center space-y-3 shadow-xs">
           <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 flex items-center justify-center text-zinc-500">
@@ -227,6 +236,19 @@ export function TransactionList({
               </div>
             </div>
           ))}
+
+          {/* View All History Trigger Button */}
+          <div className="pt-2 text-center">
+            <button
+              onClick={() => setIsAllModalOpen(true)}
+              className="w-full py-3 px-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-[0.99]"
+            >
+              <span>
+                Lihat Semua Riwayat Transaksi ({transactions.length} Mutasi Tercatat)
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -240,11 +262,22 @@ export function TransactionList({
         savingsGoals={savingsGoals}
       />
 
-      {/* Export CSV Modal */}
+      {/* Export PDF Modal */}
       <ExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         wallets={wallets}
+      />
+
+      {/* Full Transaction History Modal with Comprehensive Time Filters */}
+      <AllTransactionsModal
+        isOpen={isAllModalOpen}
+        onClose={() => setIsAllModalOpen(false)}
+        transactions={transactions}
+        wallets={wallets}
+        categories={categories}
+        savingsGoals={savingsGoals}
+        onDelete={handleDelete}
       />
     </div>
   );

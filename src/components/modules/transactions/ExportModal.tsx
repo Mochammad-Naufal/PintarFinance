@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Download, FileSpreadsheet, Loader2, X } from "lucide-react";
+import { CheckCircle2, FileText, Loader2, Printer, X } from "lucide-react";
 import { type TransactionType, type Wallet } from "@/types/finance";
-import { exportTransactionsToCSV } from "@/actions/export";
+import { getExportReportData } from "@/actions/export";
+import { generateAndPrintPDFReport } from "@/lib/export/pdf-generator";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -21,13 +22,13 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<{
-    filename: string;
+    period: string;
     totalRows: number;
   } | null>(null);
 
   if (!isOpen) return null;
 
-  const handleExport = async () => {
+  const handleExportPDF = async () => {
     setError(null);
     setSuccessInfo(null);
     setIsExporting(true);
@@ -42,35 +43,25 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
         period = "all";
       }
 
-      const res = await exportTransactionsToCSV({
+      const res = await getExportReportData({
         period,
         type: selectedType,
         walletId: selectedWallet,
       });
 
       if (res.success && res.data) {
-        const { csvContent, filename, totalRows } = res.data;
-
-        // Trigger browser download via Blob
-        const blob = new Blob([csvContent], {
-          type: "text/csv;charset=utf-8;",
+        // Trigger browser printable window / PDF engine
+        generateAndPrintPDFReport(res.data);
+        setSuccessInfo({
+          period: res.data.periodLabel,
+          totalRows: res.data.totalTransactions,
         });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        setSuccessInfo({ filename, totalRows });
       } else {
-        setError(res.error ?? "Gagal mengekspor data");
+        setError(res.error ?? "Gagal mengekspor laporan PDF");
       }
     } catch (err) {
       console.error(err);
-      setError("Terjadi kesalahan saat memproses ekspor");
+      setError("Terjadi kesalahan saat memproses ekspor PDF");
     } finally {
       setIsExporting(false);
     }
@@ -91,14 +82,14 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
         <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-zinc-100 dark:border-zinc-800/80 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <FileSpreadsheet className="w-4 h-4" />
+              <FileText className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-none">
-                Ekspor Laporan Transaksi
+                Ekspor Dokumen (PDF)
               </h2>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1">
-                Unduh file CSV kompatibel Microsoft Excel & Google Sheets
+                Unduh atau cetak laporan keuangan formal siap pakai
               </p>
             </div>
           </div>
@@ -123,13 +114,14 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 space-y-1">
               <div className="flex items-center gap-1.5 font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>File Berhasil Diunduh!</span>
+                <span>Dokumen PDF Siap Dicetak!</span>
               </div>
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                {successInfo.totalRows} baris transaksi diekspor ke{" "}
-                <span className="font-mono font-medium underline">
-                  {successInfo.filename}
-                </span>
+                {successInfo.totalRows} catatan transaksi untuk periode{" "}
+                <span className="font-semibold underline">
+                  {successInfo.period}
+                </span>{" "}
+                telah dibuka di jendela cetak browser.
               </p>
             </div>
           )}
@@ -137,7 +129,7 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
           {/* Range Selection */}
           <div>
             <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-              Rentang Waktu Laporan
+              Periode Laporan PDF
             </label>
             <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
               {(
@@ -225,14 +217,17 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
             </select>
           </div>
 
-          {/* Format Info Note */}
-          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 space-y-1">
-            <p className="font-semibold text-zinc-700 dark:text-zinc-300">
-              📋 Format Ekspor Lengkap:
+          {/* Document Preview Highlights */}
+          <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1.5">
+            <p className="font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-1.5">
+              📄 Kelengkapan Dokumen PDF:
             </p>
-            <p>
-              Menyertakan Tanggal, Tipe, Kategori, Dompet Sumber & Tujuan, Nominal IDR (angka murni), Biaya Admin, dan Catatan.
-            </p>
+            <ul className="list-disc pl-4 space-y-0.5 text-zinc-500 dark:text-zinc-400">
+              <li>Header formal Pintar Finance & metadata pengguna</li>
+              <li>Ringkasan Arus Kas Masuk, Keluar, dan Saldo Bersih</li>
+              <li>Tabel transaksi terperinci dengan tipografi monospaced</li>
+              <li>Siap dicetak langsung atau disimpan sebagai file PDF (*Save as PDF*)</li>
+            </ul>
           </div>
         </div>
 
@@ -248,15 +243,15 @@ export function ExportModal({ isOpen, onClose, wallets }: ExportModalProps) {
           <button
             type="button"
             disabled={isExporting}
-            onClick={handleExport}
+            onClick={handleExportPDF}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
           >
             {isExporting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Download className="w-3.5 h-3.5" />
+              <Printer className="w-3.5 h-3.5" />
             )}
-            Unduh File (.CSV)
+            Cetak / Simpan PDF
           </button>
         </div>
       </div>

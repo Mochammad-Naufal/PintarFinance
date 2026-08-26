@@ -2,6 +2,7 @@
 
 import { sql, DEMO_USER_ID } from "@/db";
 import { type ActionResult, type TransactionType } from "@/types/finance";
+import { formatDate } from "@/lib/utils";
 
 export interface ExportFilter {
   period?: string; // "YYYY-MM" or "all"
@@ -11,24 +12,29 @@ export interface ExportFilter {
   endDate?: string;
 }
 
-export interface ExportData {
-  csvContent: string;
-  filename: string;
-  totalRows: number;
+export interface ExportTransactionRecord {
+  id: string;
+  type: TransactionType;
+  typeLabel: string;
+  amount: number;
+  adminFee: number;
+  transactionDate: string;
+  formattedDate: string;
+  description: string;
+  categoryName: string;
+  walletName: string;
+  destinationName: string;
 }
 
-function escapeCSV(val: string | number | null | undefined): string {
-  if (val === null || val === undefined) return "";
-  const str = String(val);
-  if (
-    str.includes(",") ||
-    str.includes('"') ||
-    str.includes("\n") ||
-    str.includes("\r")
-  ) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-  return str;
+export interface ExportReportData {
+  periodLabel: string;
+  generatedAt: string;
+  userName: string;
+  totalIncome: number;
+  totalExpense: number;
+  netCashflow: number;
+  totalTransactions: number;
+  records: ExportTransactionRecord[];
 }
 
 const TYPE_LABEL_MAP: Record<TransactionType, string> = {
@@ -38,20 +44,25 @@ const TYPE_LABEL_MAP: Record<TransactionType, string> = {
   saving: "Menabung",
 };
 
-export async function exportTransactionsToCSV(
+export async function getExportReportData(
   filters?: ExportFilter
-): Promise<ActionResult<ExportData>> {
+): Promise<ActionResult<ExportReportData>> {
   try {
     let startDate = filters?.startDate;
     let endDate = filters?.endDate;
+    let periodLabel = "Semua Riwayat Transaksi";
 
     // If period is provided in "YYYY-MM" format and not "all"
     if (filters?.period && filters.period !== "all" && !startDate && !endDate) {
-      startDate = `${filters.period}-01T00:00:00Z`;
-      // Compute next month first day
       const [year, month] = filters.period.split("-").map(Number);
+      startDate = `${filters.period}-01T00:00:00Z`;
       const nextMonthDate = new Date(Date.UTC(year, month, 1));
       endDate = nextMonthDate.toISOString();
+
+      const dateObj = new Date(year, month - 1, 1);
+      periodLabel = formatDate(dateObj, "MMMM yyyy");
+    } else if (startDate && endDate) {
+      periodLabel = `${formatDate(startDate, "d MMM yyyy")} - ${formatDate(endDate, "d MMM yyyy")}`;
     }
 
     const rows = await sql`
@@ -96,77 +107,63 @@ export async function exportTransactionsToCSV(
       ORDER BY t.transaction_date DESC, t.created_at DESC
     `;
 
-    // CSV Headers
-    const headers = [
-      "Tanggal",
-      "Tipe Mutasi",
-      "Kategori",
-      "Dompet Sumber",
-      "Dompet Tujuan / Pos Impian",
-      "Nominal (IDR)",
-      "Biaya Admin (IDR)",
-      "Catatan / Merchant",
-    ];
+    let totalIncome = 0;
+    let totalExpense = 0;
 
-    const csvLines: string[] = [];
-    csvLines.push(headers.map(escapeCSV).join(","));
-
-    for (const r of rows) {
-      // Format date: YYYY-MM-DD HH:mm
-      const rawDate = r.transaction_date as string;
-      const dateFormatted = rawDate
-        ? new Date(rawDate).toISOString().replace("T", " ").slice(0, 16)
-        : "";
-
+    const records: ExportTransactionRecord[] = rows.map((r) => {
       const rawType = r.type as TransactionType;
-      const typeLabel = TYPE_LABEL_MAP[rawType] ?? rawType;
-      const category = (r.category_name as string) || "-";
-      const sourceWallet = (r.wallet_name as string) || "-";
+      const amount = Number(r.amount) || 0;
+      const adminFee = Number(r.admin_fee) || 0;
+      const rawDate = r.transaction_date as string;
+
+      if (rawType === "income") {
+        totalIncome += amount;
+      } else if (rawType === "expense") {
+        totalExpense += amount + adminFee;
+      }
+
       const destOrGoal =
         (r.destination_wallet_name as string) ||
         (r.savings_goal_name as string) ||
         "-";
-      const amount = Number(r.amount) || 0;
-      const adminFee = Number(r.admin_fee) || 0;
-      const description = (r.description as string) || "-";
 
-      const line = [
-        escapeCSV(dateFormatted),
-        escapeCSV(typeLabel),
-        escapeCSV(category),
-        escapeCSV(sourceWallet),
-        escapeCSV(destOrGoal),
-        escapeCSV(amount),
-        escapeCSV(adminFee),
-        escapeCSV(description),
-      ].join(",");
+      return {
+        id: r.id as string,
+        type: rawType,
+        typeLabel: TYPE_LABEL_MAP[rawType] ?? rawType,
+        amount,
+        adminFee,
+        transactionDate: rawDate,
+        formattedDate: rawDate ? formatDate(rawDate, "d MMM yyyy, HH:mm") : "-",
+        description: (r.description as string) || "-",
+        categoryName: (r.category_name as string) || "-",
+        walletName: (r.wallet_name as string) || "-",
+        destinationName: destOrGoal,
+      };
+    });
 
-      csvLines.push(line);
-    }
-
-    // Add UTF-8 Byte Order Mark (\uFEFF) for Excel Indonesian/international compatibility
-    const csvContent = "\uFEFF" + csvLines.join("\r\n");
-
-    // Filename generation
-    const timestamp = new Date().toISOString().slice(0, 10);
-    let filename = `laporan-transaksi-${timestamp}.csv`;
-    if (filters?.period && filters.period !== "all") {
-      filename = `laporan-transaksi-${filters.period}.csv`;
-    }
+    const netCashflow = totalIncome - totalExpense;
+    const now = new Date();
+    const generatedAt = `${formatDate(now, "d MMMM yyyy, HH:mm")} WIB`;
 
     return {
       success: true,
       data: {
-        csvContent,
-        filename,
-        totalRows: rows.length,
+        periodLabel,
+        generatedAt,
+        userName: "Demo User",
+        totalIncome,
+        totalExpense,
+        netCashflow,
+        totalTransactions: records.length,
+        records,
       },
     };
   } catch (error) {
-    console.error("Error exporting transactions to CSV:", error);
+    console.error("Error generating report data:", error);
     return {
       success: false,
-      error: "Gagal mengekspor data transaksi ke format CSV",
+      error: "Gagal mengambil data laporan transaksi",
     };
   }
 }

@@ -87,10 +87,10 @@ Status Legend:
 
 ---
 
-## Phase 9: Data Export (CSV/Spreadsheet)
-- [x] Server Action: `exportTransactionsToCSV` dengan filter rentang waktu, tipe, dan dompet (`src/actions/export.ts`)
-- [x] Format kolom standar spreadsheet (Tanggal, Tipe, Kategori, Dompet Sumber, Dompet Tujuan/Pos Impian, Nominal murni, Admin, Catatan)
-- [x] UTF-8 Byte Order Mark (`\uFEFF`) terpasang otomatis untuk kompatibilitas native Microsoft Excel & Google Sheets
-- [x] UI Komponen: `ExportModal` dengan opsi rentang dinamis (Bulan Ini, Pilih Bulan YYYY-MM, Semua) dan tipe mutasi
-- [x] Integrasi tombol aksi "Ekspor CSV" di toolbar riwayat transaksi (`src/components/modules/transactions/TransactionList.tsx`)
+## Phase 9: Financial Document Export (PDF) & Full Ledger Modal
+- [x] Server Action: `getExportReportData` agregasi rekapitulasi mutasi dan metrik keuangan (`src/actions/export.ts`)
+- [x] Vector PDF Engine: `generateAndPrintPDFReport` dengan format header formal, kartu KPI keuangan, tabel itemized monospaced, dan `@media print` A4 (`src/lib/export/pdf-generator.ts`)
+- [x] UI Komponen: `ExportModal` dengan opsi pemilihan periode, tipe mutasi, dan dompet untuk cetak/simpan PDF
+- [x] Optimasi Render Transaksi: Tampilan terbatas default 15 mutasi terbaru pada feed utama (`src/components/modules/transactions/TransactionList.tsx`)
+- [x] UI Komponen: `AllTransactionsModal` dengan preset waktu komprehensif ("Hari Ini", "7 Hari Terakhir", "Bulan Ini", "Bulan Lalu", "Kustom Tanggal"), live summary ribbon, dan feed lengkap
 - [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
