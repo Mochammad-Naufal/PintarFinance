@@ -1,20 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import "./globals.css";
 
-// ─── Fonts ────────────────────────────────────────────────────────────────────
+// ─── Fonts: Plus Jakarta Sans (Fintech UI) & JetBrains Mono (Clear Numbers) ──
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sansFont = Plus_Jakarta_Sans({
+  variable: "--font-sans-main",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const monoFont = JetBrains_Mono({
+  variable: "--font-mono-numbers",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 // ─── Viewport & Theme Color (PWA & Mobile Ready) ──────────────────────────────
@@ -50,12 +52,12 @@ export const metadata: Metadata = {
 
 // ─── Root Layout ──────────────────────────────────────────────────────────────
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased font-sans`}
+      className={`${sansFont.variable} ${monoFont.variable} h-full antialiased font-sans`}
     >
       <body
         className={[
