@@ -5,6 +5,8 @@ import { TransactionList } from "@/components/modules/transactions/TransactionLi
 import { formatCurrency } from "@/lib/utils";
 import { ArrowDownLeft, ArrowUpRight, Scale } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Riwayat Transaksi",
   description: "Catatan lengkap arus kas masuk, pengeluaran, transfer dompet, dan tabungan.",

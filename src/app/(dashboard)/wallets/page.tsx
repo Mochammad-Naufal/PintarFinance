@@ -1,6 +1,8 @@
 import { getWallets } from "@/actions/wallets";
 import { WalletList } from "@/components/modules/wallets/WalletList";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dompet & Rekening",
   description: "Kelola seluruh akun bank, e-wallet, dan kas fisik kamu dalam satu tempat.",

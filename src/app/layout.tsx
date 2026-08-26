@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
@@ -18,6 +18,20 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
+// ─── Viewport & Theme Color (PWA & Mobile Ready) ──────────────────────────────
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
+
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
@@ -27,6 +41,12 @@ export const metadata: Metadata = {
   },
   description:
     "Aplikasi manajemen keuangan pribadi yang cerdas untuk Gen Z Indonesia.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Pintar Finance",
+  },
+  applicationName: "Pintar Finance",
 };
 
 // ─── Root Layout ──────────────────────────────────────────────────────────────

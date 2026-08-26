@@ -1,6 +1,8 @@
 import { getSavingsGoals } from "@/actions/savings";
 import { SavingsGoalList } from "@/components/modules/savings/SavingsGoalList";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Pos Tabungan & Impian",
   description: "Rencanakan dan pantau progres pencapaian target tabungan impianmu.",

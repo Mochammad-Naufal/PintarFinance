@@ -18,6 +18,8 @@ import {
   Scale,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dashboard Analitik",
   description: "Ringkasan finansial cerdas, visualisasi arus kas, dan pemantauan impian keuangan.",

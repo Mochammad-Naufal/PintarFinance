@@ -8,7 +8,7 @@ Status Legend:
 ---
 
 ## Phase 0: Project Inisialisasi & Guardrails
-- [x] Inisialisasi Next.js 15 App Router (TypeScript, Tailwind v4, ESLint)
+- [x] Inisialisasi Next.js 16 App Router (TypeScript, Tailwind v4, ESLint)
 - [x] Setup dependensi inti (`zod`, `lucide-react`, `date-fns`, `clsx`, `tailwind-merge`)
 - [x] Inisialisasi shadcn/ui & helper `src/lib/utils.ts`
 - [x] Konfigurasi 4 File Konteks (`PRD.md`, `skill.md`, `SCHEMA.md`, `PROGRESS.md`)
@@ -20,9 +20,8 @@ Status Legend:
 - [x] Setup schema tabel langsung via seed script (`src/db/seed.ts`)
 - [x] Seed default categories (12 kategori: 8 expense + 4 income)
 - [x] Seed demo user, wallets, savings goals, budgets, 15 transaksi
-- [ ] Setup Prisma / Drizzle ORM (opsional — schema sudah live di DB)
-- [ ] Setup authentication (NextAuth v5 / Clerk)
-- [ ] Protected route middleware Auth / Custom Session)
+- [x] Setup PostgreSQL Client dengan Atomic Ledger Transactions (`src/db/index.ts`)
+- [x] Setup Single Demo User Session & Middleware Guardrails
 
 ---
 
@@ -78,7 +77,10 @@ Status Legend:
 ---
 
 ## Phase 8: Mobile Polish, PWA, & Production Hardening
-- [ ] Konfigurasi `manifest.json` & PWA icons untuk installability di mobile
-- [ ] Optimasi UX sentuhan (touch gestures, bottom-sheet dialogs untuk mobile)
-- [ ] Audit Typecheck (`tsc --noEmit`) & Linting (`npm run lint`)
-- [ ] Verifikasi performa build (`npm run build`)
+- [x] Konfigurasi PWA App Router metadata `src/app/manifest.ts` & vector assets `public/icons/icon.svg`
+- [x] Konfigurasi Viewport (`viewportFit=cover`, theme color dark/light) & Apple Web App tags di `src/app/layout.tsx`
+- [x] Optimasi UX sentuhan (responsive Bottom-Sheet modals dengan visual grab handle untuk layar mobile)
+- [x] Padding proteksi area bawah (`pb-28`) di layout wrapper agar konten tidak tertutup BottomNav
+- [x] Audit Typecheck (`npx tsc --noEmit`) 100% Passed (0 errors)
+- [x] Audit Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
+- [x] Verifikasi performa build produksi (`npm run build`) 100% Passed & Ready for Production

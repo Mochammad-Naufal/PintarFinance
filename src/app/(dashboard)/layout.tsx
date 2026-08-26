@@ -17,7 +17,7 @@ export default function DashboardLayout({
         <Header />
 
         {/* Page content — extra bottom padding on mobile for BottomNav */}
-        <main className="flex-1 px-4 py-5 pb-24 lg:px-6 lg:py-6 lg:pb-6 overflow-y-auto">
+        <main className="flex-1 px-4 py-5 pb-28 lg:px-6 lg:py-6 lg:pb-6 overflow-y-auto">
           {children}
         </main>
       </div>

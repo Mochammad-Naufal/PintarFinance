@@ -3,6 +3,8 @@ import { getCategories } from "@/actions/transactions";
 import { getSavingsGoals } from "@/actions/savings";
 import { AIHubClient } from "@/components/modules/ai/AIHubClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "AI Quick Scan & Assistant",
   description: "Catat transaksi instan dengan natural language processing dan vision OCR struk belanja.",
