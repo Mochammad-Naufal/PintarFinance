@@ -1,6 +1,7 @@
 "use server";
 
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import { parseNLPTransaction, parseVisionReceipt } from "@/lib/ai/client";
 import {
   type AIContext,
@@ -12,24 +13,25 @@ import { type ActionResult } from "@/types/finance";
 // ─── Helper to Fetch Active User Financial Context ───────────────────────────
 
 async function getUserAIContext(): Promise<AIContext> {
+  const user = await getCurrentUser();
   const [walletRows, categoryRows, goalRows] = await Promise.all([
     sql`
       SELECT id, name, type 
       FROM wallets 
-      WHERE user_id = ${DEMO_USER_ID} 
+      WHERE user_id = ${user.id} 
         AND deleted_at IS NULL
       ORDER BY name ASC
     `,
     sql`
       SELECT id, name, type 
       FROM categories 
-      WHERE (user_id = ${DEMO_USER_ID} OR user_id IS NULL)
+      WHERE (user_id = ${user.id} OR user_id IS NULL)
       ORDER BY name ASC
     `,
     sql`
       SELECT id, name, target_amount 
       FROM savings_goals 
-      WHERE user_id = ${DEMO_USER_ID} 
+      WHERE user_id = ${user.id} 
         AND deleted_at IS NULL
       ORDER BY name ASC
     `,

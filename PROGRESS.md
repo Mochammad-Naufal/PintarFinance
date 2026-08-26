@@ -94,3 +94,15 @@ Status Legend:
 - [x] Optimasi Render Transaksi: Tampilan terbatas default 15 mutasi terbaru pada feed utama (`src/components/modules/transactions/TransactionList.tsx`)
 - [x] UI Komponen: `AllTransactionsModal` dengan preset waktu komprehensif ("Hari Ini", "7 Hari Terakhir", "Bulan Ini", "Bulan Lalu", "Kustom Tanggal"), live summary ribbon, dan feed lengkap
 - [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
+
+---
+
+## Phase 10: Multi-User Authentication & Session Isolation
+- [x] Supabase Auth SSR setup di `src/lib/supabase/` (`server.ts`, `client.ts`, `middleware.ts`, `user.ts`)
+- [x] Dynamic session helper `getCurrentUser()` dengan fallback mulus mode Demo
+- [x] Onboarding initialization trigger: Otomatis clone 12 kategori default & dompet utama saat user baru terdaftar
+- [x] Halaman Auth: Login (`src/app/(auth)/login/page.tsx`), Register (`src/app/(auth)/register/page.tsx`), dan Layout (`src/app/(auth)/layout.tsx`)
+- [x] Server Actions Autentikasi: `signInWithPassword`, `signInWithOtp`, `signUp`, `signOut` (`src/actions/auth.ts`)
+- [x] Refactor seluruh Server Actions (`wallets.ts`, `transactions.ts`, `savings.ts`, `budgets.ts`, `analytics.ts`, `export.ts`, `ai.ts`) dengan `WHERE user_id = user.id` untuk isolasi data 100%
+- [x] UI Menu Profile & Sign Out dinamis di Header (`UserProfileMenu.tsx`) dan Sidebar
+- [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)

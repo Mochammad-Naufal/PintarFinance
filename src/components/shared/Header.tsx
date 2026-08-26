@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bell, Moon, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { cn, formatDate } from "@/lib/utils";
+import { UserProfileMenu } from "./UserProfileMenu";
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
@@ -67,16 +68,8 @@ export function Header() {
           )}
         </button>
 
-        {/* User avatar */}
-        <div className="flex items-center gap-2 pl-2 sm:pl-2.5 ml-1 border-l border-zinc-200 dark:border-zinc-800">
-          <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">D</span>
-          </div>
-          <div className="hidden md:block pr-1">
-            <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 leading-none">Demo User</p>
-            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Free Plan</p>
-          </div>
-        </div>
+        {/* Dynamic User Profile Menu */}
+        <UserProfileMenu />
       </div>
     </header>
   );

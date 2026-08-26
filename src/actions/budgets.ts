@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import {
   type ActionResult,
   type Budget,
@@ -34,6 +35,7 @@ function getPeriodDateRange(period: string) {
 
 export async function getBudgets(period?: string): Promise<Budget[]> {
   try {
+    const user = await getCurrentUser();
     const targetPeriod = period || (await getCurrentPeriod());
     const { startDate, nextMonthDate } = getPeriodDateRange(targetPeriod);
 
@@ -53,12 +55,12 @@ export async function getBudgets(period?: string): Promise<Budget[]> {
       FROM budgets b
       JOIN categories c ON c.id = b.category_id
       LEFT JOIN transactions t ON t.category_id = b.category_id
-        AND t.user_id = ${DEMO_USER_ID}
+        AND t.user_id = ${user.id}
         AND t.deleted_at IS NULL
         AND t.type = 'expense'
         AND t.transaction_date >= ${startDate}::timestamptz
         AND t.transaction_date < ${nextMonthDate}::timestamptz
-      WHERE b.user_id = ${DEMO_USER_ID}
+      WHERE b.user_id = ${user.id}
         AND b.period = ${targetPeriod}
       GROUP BY 
         b.id, 
@@ -127,10 +129,11 @@ export async function upsertBudget(
   const { category_id, period, limit_amount } = parsed.data;
 
   try {
+    const user = await getCurrentUser();
     // Check if a budget exists for this category & period
     const [existing] = await sql`
       SELECT id FROM budgets
-      WHERE user_id = ${DEMO_USER_ID}
+      WHERE user_id = ${user.id}
         AND category_id = ${category_id}
         AND period = ${period}
     `;
@@ -144,7 +147,7 @@ export async function upsertBudget(
           limit_amount = ${limit_amount},
           updated_at = now()
         WHERE id = ${existing.id}
-          AND user_id = ${DEMO_USER_ID}
+          AND user_id = ${user.id}
         RETURNING id
       `;
       budgetId = updated.id as string;
@@ -156,7 +159,7 @@ export async function upsertBudget(
           period,
           limit_amount
         ) VALUES (
-          ${DEMO_USER_ID},
+          ${user.id},
           ${category_id},
           ${period},
           ${limit_amount}
@@ -190,10 +193,11 @@ export async function upsertBudget(
 
 export async function deleteBudget(id: string): Promise<ActionResult> {
   try {
+    const user = await getCurrentUser();
     const result = await sql`
       DELETE FROM budgets
       WHERE id = ${id}
-        AND user_id = ${DEMO_USER_ID}
+        AND user_id = ${user.id}
       RETURNING id
     `;
 

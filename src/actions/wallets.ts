@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import {
   type ActionResult,
   type Wallet,
@@ -13,6 +14,7 @@ import {
 
 export async function getWallets(): Promise<Wallet[]> {
   try {
+    const user = await getCurrentUser();
     const rows = await sql`
       SELECT 
         id,
@@ -27,7 +29,7 @@ export async function getWallets(): Promise<Wallet[]> {
         updated_at::text,
         deleted_at::text
       FROM wallets
-      WHERE user_id = ${DEMO_USER_ID}
+      WHERE user_id = ${user.id}
         AND deleted_at IS NULL
       ORDER BY created_at ASC
     `;
@@ -65,6 +67,7 @@ export async function createWallet(data: WalletInput): Promise<ActionResult<Wall
   const { name, type, balance, color, icon } = parsed.data;
 
   try {
+    const user = await getCurrentUser();
     const [inserted] = await sql`
       INSERT INTO wallets (
         user_id,
@@ -74,7 +77,7 @@ export async function createWallet(data: WalletInput): Promise<ActionResult<Wall
         color,
         icon
       ) VALUES (
-        ${DEMO_USER_ID},
+        ${user.id},
         ${name},
         ${type},
         ${balance},
@@ -140,6 +143,7 @@ export async function updateWallet(
   const { name, type, balance, color, icon } = parsed.data;
 
   try {
+    const user = await getCurrentUser();
     const [updated] = await sql`
       UPDATE wallets
       SET
@@ -150,7 +154,7 @@ export async function updateWallet(
         icon = ${icon},
         updated_at = now()
       WHERE id = ${id}
-        AND user_id = ${DEMO_USER_ID}
+        AND user_id = ${user.id}
         AND deleted_at IS NULL
       RETURNING 
         id,
@@ -205,13 +209,14 @@ export async function updateWallet(
 
 export async function deleteWallet(id: string): Promise<ActionResult> {
   try {
+    const user = await getCurrentUser();
     const [deleted] = await sql`
       UPDATE wallets
       SET 
         deleted_at = now(),
         updated_at = now()
       WHERE id = ${id}
-        AND user_id = ${DEMO_USER_ID}
+        AND user_id = ${user.id}
         AND deleted_at IS NULL
       RETURNING id
     `;

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import {
   type ActionResult,
   type Category,
@@ -17,6 +18,7 @@ export async function getCategories(
   type?: "expense" | "income"
 ): Promise<Category[]> {
   try {
+    const user = await getCurrentUser();
     const rows = await sql`
       SELECT 
         id,
@@ -27,7 +29,7 @@ export async function getCategories(
         color,
         created_at::text
       FROM categories
-      WHERE (user_id = ${DEMO_USER_ID} OR user_id IS NULL)
+      WHERE (user_id = ${user.id} OR user_id IS NULL)
         ${type ? sql`AND type = ${type}` : sql``}
       ORDER BY name ASC
     `;
@@ -53,6 +55,7 @@ export async function getTransactions(
   filters?: TransactionFilter
 ): Promise<Transaction[]> {
   try {
+    const user = await getCurrentUser();
     const limit = filters?.limit ?? 50;
     const offset = filters?.offset ?? 0;
 
@@ -94,7 +97,7 @@ export async function getTransactions(
       LEFT JOIN wallets dw ON dw.id = t.destination_wallet_id
       LEFT JOIN categories c ON c.id = t.category_id
       LEFT JOIN savings_goals sg ON sg.id = t.savings_goal_id
-      WHERE t.user_id = ${DEMO_USER_ID}
+      WHERE t.user_id = ${user.id}
         AND t.deleted_at IS NULL
         ${
           filters?.walletId
@@ -193,6 +196,7 @@ export async function createTransaction(
   } = parsed.data;
 
   try {
+    const user = await getCurrentUser();
     const result = await sql.begin(async (tx) => {
       // 1. Insert transaction record
       const [inserted] = await tx`
@@ -209,7 +213,7 @@ export async function createTransaction(
           description,
           receipt_url
         ) VALUES (
-          ${DEMO_USER_ID},
+          ${user.id},
           ${wallet_id},
           ${destination_wallet_id ?? null},
           ${category_id ?? null},
@@ -248,7 +252,7 @@ export async function createTransaction(
             balance = balance - ${totalDeduct},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       } else if (type === "income") {
         await tx`
@@ -257,7 +261,7 @@ export async function createTransaction(
             balance = balance + ${amount},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       } else if (type === "transfer" && destination_wallet_id) {
         const totalDeduct = amount + admin_fee;
@@ -268,7 +272,7 @@ export async function createTransaction(
             balance = balance - ${totalDeduct},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
         // Add to destination wallet
         await tx`
@@ -277,7 +281,7 @@ export async function createTransaction(
             balance = balance + ${amount},
             updated_at = now()
           WHERE id = ${destination_wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       } else if (type === "saving" && savings_goal_id) {
         // Deduct source wallet
@@ -287,7 +291,7 @@ export async function createTransaction(
             balance = balance - ${amount},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
         // Add to savings goal
         await tx`
@@ -297,7 +301,7 @@ export async function createTransaction(
             is_completed = (current_amount + ${amount} >= target_amount),
             updated_at = now()
           WHERE id = ${savings_goal_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       }
 
@@ -342,6 +346,7 @@ export async function createTransaction(
 
 export async function deleteTransaction(id: string): Promise<ActionResult> {
   try {
+    const user = await getCurrentUser();
     await sql.begin(async (tx) => {
       // 1. Fetch the active transaction
       const [existing] = await tx`
@@ -355,7 +360,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
           admin_fee
         FROM transactions
         WHERE id = ${id}
-          AND user_id = ${DEMO_USER_ID}
+          AND user_id = ${user.id}
           AND deleted_at IS NULL
       `;
 
@@ -377,6 +382,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
           deleted_at = now(),
           updated_at = now()
         WHERE id = ${id}
+          AND user_id = ${user.id}
       `;
 
       // 3. Reverse the ledger balance changes
@@ -388,7 +394,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             balance = balance + ${totalRefund},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       } else if (type === "income") {
         await tx`
@@ -397,7 +403,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             balance = balance - ${amount},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       } else if (type === "transfer" && destination_wallet_id) {
         const totalRefund = amount + admin_fee;
@@ -408,7 +414,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             balance = balance + ${totalRefund},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
         // Deduct destination wallet
         await tx`
@@ -417,7 +423,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             balance = balance - ${amount},
             updated_at = now()
           WHERE id = ${destination_wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       } else if (type === "saving" && savings_goal_id) {
         // Refund source wallet
@@ -427,7 +433,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             balance = balance + ${amount},
             updated_at = now()
           WHERE id = ${wallet_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
         // Deduct from savings goal
         await tx`
@@ -437,7 +443,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             is_completed = (GREATEST(0, current_amount - ${amount}) >= target_amount),
             updated_at = now()
           WHERE id = ${savings_goal_id}
-            AND user_id = ${DEMO_USER_ID}
+            AND user_id = ${user.id}
         `;
       }
     });

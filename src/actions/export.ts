@@ -1,6 +1,7 @@
 "use server";
 
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import { type ActionResult, type TransactionType } from "@/types/finance";
 import { formatDate } from "@/lib/utils";
 
@@ -48,6 +49,7 @@ export async function getExportReportData(
   filters?: ExportFilter
 ): Promise<ActionResult<ExportReportData>> {
   try {
+    const user = await getCurrentUser();
     let startDate = filters?.startDate;
     let endDate = filters?.endDate;
     let periodLabel = "Semua Riwayat Transaksi";
@@ -82,7 +84,7 @@ export async function getExportReportData(
       LEFT JOIN wallets dw ON dw.id = t.destination_wallet_id
       LEFT JOIN categories c ON c.id = t.category_id
       LEFT JOIN savings_goals sg ON sg.id = t.savings_goal_id
-      WHERE t.user_id = ${DEMO_USER_ID}
+      WHERE t.user_id = ${user.id}
         AND t.deleted_at IS NULL
         ${
           filters?.walletId && filters.walletId !== "all"
@@ -151,7 +153,7 @@ export async function getExportReportData(
       data: {
         periodLabel,
         generatedAt,
-        userName: "Demo User",
+        userName: user.name,
         totalIncome,
         totalExpense,
         netCashflow,

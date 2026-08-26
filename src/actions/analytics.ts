@@ -1,6 +1,7 @@
 "use server";
 
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import {
   type CategoryExpenseBreakdown,
   type DashboardAnalytics,
@@ -35,6 +36,7 @@ function getLast6Periods(currentPeriod: string): string[] {
 export async function getDashboardAnalytics(
   period?: string
 ): Promise<DashboardAnalytics> {
+  const user = await getCurrentUser();
   const currentPeriod = period || (await getCurrentPeriod());
   const [yearStr, monthStr] = currentPeriod.split("-");
   const year = parseInt(yearStr, 10);
@@ -70,7 +72,7 @@ export async function getDashboardAnalytics(
       sql`
         SELECT COALESCE(SUM(balance), 0) AS total_balance
         FROM wallets
-        WHERE user_id = ${DEMO_USER_ID}
+        WHERE user_id = ${user.id}
           AND deleted_at IS NULL
           AND is_active = true
       `,
@@ -78,7 +80,7 @@ export async function getDashboardAnalytics(
       sql`
         SELECT COALESCE(SUM(current_amount), 0) AS total_savings
         FROM savings_goals
-        WHERE user_id = ${DEMO_USER_ID}
+        WHERE user_id = ${user.id}
           AND deleted_at IS NULL
       `,
       // 3. Top 3 savings goals
@@ -97,7 +99,7 @@ export async function getDashboardAnalytics(
           updated_at::text,
           deleted_at::text
         FROM savings_goals
-        WHERE user_id = ${DEMO_USER_ID}
+        WHERE user_id = ${user.id}
           AND deleted_at IS NULL
         ORDER BY (current_amount::numeric / GREATEST(target_amount, 1)::numeric) DESC, created_at ASC
         LIMIT 3
@@ -106,7 +108,7 @@ export async function getDashboardAnalytics(
       sql`
         SELECT COALESCE(SUM(amount), 0) AS total_income
         FROM transactions
-        WHERE user_id = ${DEMO_USER_ID}
+        WHERE user_id = ${user.id}
           AND deleted_at IS NULL
           AND type = 'income'
           AND transaction_date >= ${startDate}::timestamptz
@@ -116,7 +118,7 @@ export async function getDashboardAnalytics(
       sql`
         SELECT COALESCE(SUM(amount + admin_fee), 0) AS total_expense
         FROM transactions
-        WHERE user_id = ${DEMO_USER_ID}
+        WHERE user_id = ${user.id}
           AND deleted_at IS NULL
           AND type = 'expense'
           AND transaction_date >= ${startDate}::timestamptz
@@ -132,11 +134,11 @@ export async function getDashboardAnalytics(
           SUM(t.amount + t.admin_fee) AS amount
         FROM transactions t
         JOIN categories c ON c.id = t.category_id
-        WHERE t.user_id = ${DEMO_USER_ID}
+        WHERE t.user_id = ${user.id}
           AND t.deleted_at IS NULL
           AND t.type = 'expense'
-          AND t.transaction_date >= ${startDate}::timestamptz
-          AND t.transaction_date < ${nextMonthDate}::timestamptz
+          AND transaction_date >= ${startDate}::timestamptz
+          AND transaction_date < ${nextMonthDate}::timestamptz
         GROUP BY c.id, c.name, c.icon, c.color
         ORDER BY amount DESC
       `,
@@ -147,7 +149,7 @@ export async function getDashboardAnalytics(
           type,
           SUM(amount + (CASE WHEN type = 'expense' THEN admin_fee ELSE 0 END)) AS total
         FROM transactions
-        WHERE user_id = ${DEMO_USER_ID}
+        WHERE user_id = ${user.id}
           AND deleted_at IS NULL
           AND (type = 'income' OR type = 'expense')
           AND transaction_date >= ${sixMonthsStartDate}::timestamptz

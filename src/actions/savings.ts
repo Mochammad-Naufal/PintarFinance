@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sql, DEMO_USER_ID } from "@/db";
+import { sql } from "@/db";
+import { getCurrentUser } from "@/lib/supabase/user";
 import {
   type ActionResult,
   type SavingsGoal,
@@ -13,6 +14,7 @@ import {
 
 export async function getSavingsGoals(): Promise<SavingsGoal[]> {
   try {
+    const user = await getCurrentUser();
     const rows = await sql`
       SELECT 
         id,
@@ -28,7 +30,7 @@ export async function getSavingsGoals(): Promise<SavingsGoal[]> {
         updated_at::text,
         deleted_at::text
       FROM savings_goals
-      WHERE user_id = ${DEMO_USER_ID}
+      WHERE user_id = ${user.id}
         AND deleted_at IS NULL
       ORDER BY created_at ASC
     `;
@@ -71,6 +73,7 @@ export async function createSavingsGoal(
   const is_completed = current_amount >= target_amount;
 
   try {
+    const user = await getCurrentUser();
     const [inserted] = await sql`
       INSERT INTO savings_goals (
         user_id,
@@ -82,7 +85,7 @@ export async function createSavingsGoal(
         icon,
         is_completed
       ) VALUES (
-        ${DEMO_USER_ID},
+        ${user.id},
         ${name},
         ${target_amount},
         ${current_amount},
@@ -154,6 +157,7 @@ export async function updateSavingsGoal(
   const is_completed = current_amount >= target_amount;
 
   try {
+    const user = await getCurrentUser();
     const [updated] = await sql`
       UPDATE savings_goals
       SET
@@ -166,7 +170,7 @@ export async function updateSavingsGoal(
         is_completed = ${is_completed},
         updated_at = now()
       WHERE id = ${id}
-        AND user_id = ${DEMO_USER_ID}
+        AND user_id = ${user.id}
         AND deleted_at IS NULL
       RETURNING 
         id,
@@ -223,13 +227,14 @@ export async function updateSavingsGoal(
 
 export async function deleteSavingsGoal(id: string): Promise<ActionResult> {
   try {
+    const user = await getCurrentUser();
     const [deleted] = await sql`
       UPDATE savings_goals
       SET 
         deleted_at = now(),
         updated_at = now()
       WHERE id = ${id}
-        AND user_id = ${DEMO_USER_ID}
+        AND user_id = ${user.id}
         AND deleted_at IS NULL
       RETURNING id
     `;
