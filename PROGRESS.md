@@ -51,9 +51,10 @@ Status Legend:
 ---
 
 ## Phase 5: Budgeting & Monthly Limits
-- [ ] Server Action: CRUD Monthly Budgets per kategori
-- [ ] Query komputasi total realisasi pengeluaran vs limit budget per periode (`YYYY-MM`)
-- [ ] UI Komponen: Budget Tracker Widget dengan threshold progress bar (<75%, 75-99%, >=100%)
+- [x] Server Action: CRUD Monthly Budgets per kategori (`getBudgets`, `upsertBudget`, `deleteBudget`)
+- [x] Query komputasi realisasi pengeluaran vs limit budget per periode (`YYYY-MM`)
+- [x] UI Komponen: Budget Health Summary, BudgetCard dengan threshold progress bar (<75%, 75-99%, >=100%), dan BudgetModal
+- [x] UI Komponen: Integrasi Widget Status Anggaran Bulan Ini di Dashboard
 
 ---
 

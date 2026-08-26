@@ -188,6 +188,35 @@ export interface TransactionFilter {
   offset?: number;
 }
 
+// ─── Budget Types & Schemas ──────────────────────────────────────────────────
+
+export type BudgetStatus = "safe" | "warning" | "danger";
+
+export interface Budget {
+  id: string;
+  user_id: string;
+  category_id: string;
+  period: string; // 'YYYY-MM'
+  limit_amount: number;
+  spent_amount: number;
+  remaining_amount: number;
+  percentage: number;
+  status: BudgetStatus;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const budgetSchema = z.object({
+  category_id: z.string().min(1, "Pilih kategori pengeluaran"),
+  period: z.string().regex(/^\d{4}-\d{2}$/, "Format periode harus YYYY-MM (e.g. 2026-08)"),
+  limit_amount: z.coerce.number().min(10000, "Batas limit anggaran minimal Rp 10.000"),
+});
+
+export type BudgetInput = z.infer<typeof budgetSchema>;
+
 // ─── Action Result Type ──────────────────────────────────────────────────────
 
 export interface ActionResult<T = unknown> {

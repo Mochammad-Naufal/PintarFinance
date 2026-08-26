@@ -2,11 +2,13 @@ import Link from "next/link";
 import { getWallets } from "@/actions/wallets";
 import { getSavingsGoals } from "@/actions/savings";
 import { getTransactions } from "@/actions/transactions";
+import { getBudgets } from "@/actions/budgets";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { DynamicIcon } from "@/lib/icons";
 import {
   ArrowRight,
   CreditCard,
+  GraduationCap,
   PiggyBank,
   Receipt,
   TrendingUp,
@@ -19,10 +21,11 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const [wallets, goals, recentTransactions] = await Promise.all([
+  const [wallets, goals, recentTransactions, currentBudgets] = await Promise.all([
     getWallets(),
     getSavingsGoals(),
     getTransactions({ limit: 5 }),
+    getBudgets(),
   ]);
 
   const totalBalance = wallets.reduce((acc, w) => acc + w.balance, 0);
@@ -193,6 +196,85 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* ── Monthly Budget Status Widget ──────────────────────────────── */}
+      {currentBudgets.length > 0 && (
+        <section className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                Status Anggaran Bulan Ini
+              </h2>
+            </div>
+            <Link
+              href="/budgets"
+              className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 flex items-center gap-1"
+            >
+              Semua Anggaran <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {currentBudgets.slice(0, 3).map((b) => {
+              const isOver = b.spent_amount > b.limit_amount;
+              const isWarn = b.percentage >= 75 && !isOver;
+              const barColor = isOver
+                ? "bg-rose-500"
+                : isWarn
+                ? "bg-amber-500"
+                : "bg-emerald-500";
+
+              return (
+                <div
+                  key={b.id}
+                  className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/60 space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                        style={{
+                          backgroundColor: `${b.category_color}15`,
+                          color: b.category_color,
+                        }}
+                      >
+                        <DynamicIcon name={b.category_icon} className="w-3.5 h-3.5" />
+                      </div>
+                      <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                        {b.category_name}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs font-bold font-mono tabular-nums ${
+                        isOver
+                          ? "text-rose-600 dark:text-rose-400"
+                          : isWarn
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-zinc-700 dark:text-zinc-300"
+                      }`}
+                    >
+                      {b.percentage}%
+                    </span>
+                  </div>
+
+                  <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${barColor}`}
+                      style={{ width: `${Math.min(100, b.percentage)}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
+                    <span>{formatCurrency(b.spent_amount)}</span>
+                    <span>Limit: {formatCurrency(b.limit_amount)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── Recent Transactions Live Widget ───────────────────────────── */}
       <section className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs space-y-4">
