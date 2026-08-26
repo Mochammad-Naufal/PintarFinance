@@ -1,5 +1,6 @@
 import { getWallets } from "@/actions/wallets";
 import { WalletList } from "@/components/modules/wallets/WalletList";
+import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,9 @@ export default async function WalletsPage() {
           Pantau saldo kas, rekening perbankan, dan saldo e-wallet secara real-time.
         </p>
       </div>
+
+      {/* AI Contextual Advisor */}
+      <AIContextCard moduleType="wallets" moduleName="Manajemen Dompet" />
 
       <WalletList initialWallets={wallets} />
     </div>

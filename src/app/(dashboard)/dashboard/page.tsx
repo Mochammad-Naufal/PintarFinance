@@ -7,6 +7,7 @@ import { DynamicIcon } from "@/lib/icons";
 import { NetWorthBanner } from "@/components/modules/analytics/NetWorthBanner";
 import { CashflowChart } from "@/components/modules/analytics/CashflowChart";
 import { ExpenseCategoryChart } from "@/components/modules/analytics/ExpenseCategoryChart";
+import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 import {
   ArrowDownLeft,
   ArrowRight,
@@ -36,6 +37,9 @@ export default async function DashboardPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* ── Baris 1: Hero Net Worth Banner ──────────────────────────────── */}
       <NetWorthBanner analytics={analytics} />
+
+      {/* ── AI Contextual Advisor ────────────────────────────────────────── */}
+      <AIContextCard moduleType="dashboard" moduleName="Dashboard Finansial" />
 
       {/* ── Quick Monthly Cashflow Cards ─────────────────────────────────── */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">

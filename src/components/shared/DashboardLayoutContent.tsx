@@ -4,6 +4,7 @@ import { useSidebar } from "./SidebarContext";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { BottomNav } from "./BottomNav";
+import { AIChatDrawer } from "@/components/modules/ai/AIChatDrawer";
 import { cn } from "@/lib/utils";
 
 export function DashboardLayoutContent({
@@ -34,6 +35,9 @@ export function DashboardLayoutContent({
           </div>
         </main>
       </div>
+
+      {/* Floating AI Financial Chatbot Assistant */}
+      <AIChatDrawer />
 
       {/* Mobile bottom nav */}
       <BottomNav />

@@ -1,5 +1,6 @@
 import { getSavingsGoals } from "@/actions/savings";
 import { SavingsGoalList } from "@/components/modules/savings/SavingsGoalList";
+import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,9 @@ export default async function SavingsPage() {
           Kumpulkan dana untuk impian, kebutuhan masa depan, atau dana darurat secara terstruktur.
         </p>
       </div>
+
+      {/* AI Contextual Advisor */}
+      <AIContextCard moduleType="savings" moduleName="Target Impian & Tabungan" />
 
       <SavingsGoalList initialGoals={goals} />
     </div>

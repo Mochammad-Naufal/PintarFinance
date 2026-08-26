@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Calculator,
   CreditCard,
   GraduationCap,
   LogIn,
@@ -31,12 +32,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard",    label: "Dashboard",       icon: BarChart3                          },
-  { href: "/wallets",      label: "Dompet",          icon: CreditCard                         },
-  { href: "/transactions", label: "Transaksi",       icon: Receipt                            },
-  { href: "/budgets",      label: "Anggaran",        icon: GraduationCap                      },
-  { href: "/savings",      label: "Tabungan Impian", icon: PiggyBank                          },
-  { href: "/ai",           label: "AI Quick Scan",   icon: Sparkles,      badge: "Beta"       },
+  { href: "/dashboard",    label: "Dashboard",        icon: BarChart3                          },
+  { href: "/wallets",      label: "Dompet",           icon: CreditCard                         },
+  { href: "/transactions", label: "Transaksi",        icon: Receipt                            },
+  { href: "/budgets",      label: "Anggaran",         icon: GraduationCap                      },
+  { href: "/savings",      label: "Tabungan Impian",  icon: PiggyBank                          },
+  { href: "/calculator",   label: "Kalkulator Bunga", icon: Calculator                         },
+  { href: "/ai",           label: "AI Quick Scan",    icon: Sparkles,      badge: "Beta"       },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────

@@ -133,3 +133,14 @@ Status Legend:
 - [x] Atomic Transaction Integration: `createTransaction` & `deleteTransaction` disesuaikan agar anggota dapat menyetor dan mengakumulasi saldo ke pos tabungan bersama
 - [x] UI Komponen: `SavingsGoalCard` (badge Tabungan Bersama, stacked avatars, rincian kontribusi per anggota, kontrol peran owner vs member), `InviteMemberModal` (salin link 1-klik, share WhatsApp, daftar anggota), `JoinSavingsPage` di `/savings/join`
 - [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
+
+---
+
+## Phase 14: Contextual AI Insights, Financial Chatbot & Compounding Interest Engine
+- [x] Server Action AI Advisor: `getModuleAIAnalysis` dengan integrasi Google Gemini API `gemini-1.5-flash` & evaluator rule-based tangguh (`src/actions/ai-advisor.ts`)
+- [x] Server Action AI Chatbot: `sendFinancialChatMessage` dengan live financial snapshot context & Financial Advisor Persona (`src/actions/ai-chat.ts`)
+- [x] Compounding Interest Calculator Engine: Formula matematika akurat $A = P(1+r/n)^{nt} + PMT \times \dots$, visualisasi proyeksi grafik per tahun, breakdown tabel, dan aksi tautkan ke pos impian di `/calculator` (`CompoundInterestCalculator.tsx`)
+- [x] UI Komponen Contextual Advisor: `AIContextCard` on-demand terintegrasi di `/dashboard`, `/wallets`, `/budgets`, `/savings`, dan `/transactions`
+- [x] UI Komponen Chatbot: `AIChatDrawer` floating action drawer dengan quick prompt chips & Markdown formatter yang terpasang secara global
+- [x] Navigasi: Menu baru "Kalkulator Bunga" pada Desktop Sidebar & Layout
+- [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)

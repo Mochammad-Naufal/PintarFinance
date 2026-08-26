@@ -3,6 +3,7 @@ import { getWallets } from "@/actions/wallets";
 import { getSavingsGoals } from "@/actions/savings";
 import { getRecurringTransactions } from "@/actions/recurring";
 import { TransactionsViewTabs } from "@/components/modules/transactions/TransactionsViewTabs";
+import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,9 @@ export default async function TransactionsPage() {
           Pantau seluruh pergerakan uang harian, komitmen langganan rutin, dan jadwal tagihan otomatis.
         </p>
       </div>
+
+      {/* AI Contextual Advisor */}
+      <AIContextCard moduleType="transactions" moduleName="Riwayat Transaksi" />
 
       {/* Segmented View Tabs */}
       <TransactionsViewTabs

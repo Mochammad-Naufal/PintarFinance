@@ -1,6 +1,7 @@
 import { getBudgets, getCurrentPeriod } from "@/actions/budgets";
 import { getCategories } from "@/actions/transactions";
 import { BudgetList } from "@/components/modules/budgets/BudgetList";
+import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 
 export const metadata = {
   title: "Batas Anggaran Bulanan",
@@ -31,6 +32,9 @@ export default async function BudgetsPage({ searchParams }: BudgetsPageProps) {
           Pantau limit kuota pengeluaran per kategori secara disiplin setiap bulannya.
         </p>
       </div>
+
+      {/* AI Contextual Advisor */}
+      <AIContextCard moduleType="budgets" moduleName="Batas Anggaran" />
 
       <BudgetList
         initialBudgets={budgets}
