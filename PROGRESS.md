@@ -27,17 +27,17 @@ Status Legend:
 ---
 
 ## Phase 2: App Shell & Layout Navigation (Mobile-First)
-- [ ] Buat Root Layout dengan Theme Provider (Dark/Light Mode)
-- [ ] Buat Komponen Shell: Sidebar (Desktop) dan Bottom Navigation Bar (Mobile)
-- [ ] Setup Header global dengan user profile preview & ringkasan cepat
+- [x] Buat Root Layout dengan Theme Provider (Dark/Light Mode)
+- [x] Buat Komponen Shell: Sidebar (Desktop) dan Bottom Navigation Bar (Mobile)
+- [x] Setup Header global dengan user profile preview & ringkasan cepat
 
 ---
 
 ## Phase 3: Wallet & Savings Goal Management (Core Assets)
-- [ ] Server Action: CRUD Wallets (Create, Read, Update, Soft-delete)
-- [ ] UI Komponen: Wallet Cards Grid & Modal Tambah/Edit Dompet
-- [ ] Server Action: CRUD Savings Goals (Create, Read, Update, Delete)
-- [ ] UI Komponen: Savings Goal Card dengan Progress Bar capaian
+- [x] Server Action: CRUD Wallets (Create, Read, Update, Soft-delete)
+- [x] UI Komponen: Wallet Cards Grid & Modal Tambah/Edit Dompet
+- [x] Server Action: CRUD Savings Goals (Create, Read, Update, Delete)
+- [x] UI Komponen: Savings Goal Card dengan Progress Bar capaian
 
 ---
 
