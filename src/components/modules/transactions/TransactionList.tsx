@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Receipt } from "lucide-react";
+import { Download, Plus, Receipt } from "lucide-react";
 import {
   type Category,
   type SavingsGoal,
@@ -13,6 +13,7 @@ import {
 import { TransactionItem } from "./TransactionItem";
 import { TransactionFilter } from "./TransactionFilter";
 import { TransactionModal } from "./TransactionModal";
+import { ExportModal } from "./ExportModal";
 import { createTransaction, deleteTransaction } from "@/actions/transactions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ export function TransactionList({
   const [selectedWallet, setSelectedWallet] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Client-side filtering for fast response
   const filteredTransactions = useMemo(() => {
@@ -133,7 +135,7 @@ export function TransactionList({
 
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
-      {/* Top Filter Bar + Add Button */}
+      {/* Top Filter Bar + Action Buttons */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex-1">
           <TransactionFilter
@@ -147,13 +149,26 @@ export function TransactionList({
           />
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white font-semibold text-xs hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-xs shrink-0"
-        >
-          <Plus className="w-4 h-4" strokeWidth={2} />
-          Catat Transaksi
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Export CSV Trigger */}
+          <button
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3.5 py-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-xs hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 active:scale-[0.98] transition-all shadow-xs"
+            aria-label="Ekspor CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+            <span className="hidden sm:inline">Ekspor CSV</span>
+          </button>
+
+          {/* Add Transaction Button */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-emerald-600 dark:bg-emerald-500 text-white font-semibold text-xs hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-xs"
+          >
+            <Plus className="w-4 h-4" strokeWidth={2} />
+            <span>Catat Transaksi</span>
+          </button>
+        </div>
       </div>
 
       {/* Transactions Grouped by Date */}
@@ -215,7 +230,7 @@ export function TransactionList({
         </div>
       )}
 
-      {/* Modal */}
+      {/* Transaction Entry Modal */}
       <TransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -223,6 +238,13 @@ export function TransactionList({
         wallets={wallets}
         categories={categories}
         savingsGoals={savingsGoals}
+      />
+
+      {/* Export CSV Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        wallets={wallets}
       />
     </div>
   );

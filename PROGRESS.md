@@ -84,3 +84,13 @@ Status Legend:
 - [x] Audit Typecheck (`npx tsc --noEmit`) 100% Passed (0 errors)
 - [x] Audit Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
 - [x] Verifikasi performa build produksi (`npm run build`) 100% Passed & Ready for Production
+
+---
+
+## Phase 9: Data Export (CSV/Spreadsheet)
+- [x] Server Action: `exportTransactionsToCSV` dengan filter rentang waktu, tipe, dan dompet (`src/actions/export.ts`)
+- [x] Format kolom standar spreadsheet (Tanggal, Tipe, Kategori, Dompet Sumber, Dompet Tujuan/Pos Impian, Nominal murni, Admin, Catatan)
+- [x] UTF-8 Byte Order Mark (`\uFEFF`) terpasang otomatis untuk kompatibilitas native Microsoft Excel & Google Sheets
+- [x] UI Komponen: `ExportModal` dengan opsi rentang dinamis (Bulan Ini, Pilih Bulan YYYY-MM, Semua) dan tipe mutasi
+- [x] Integrasi tombol aksi "Ekspor CSV" di toolbar riwayat transaksi (`src/components/modules/transactions/TransactionList.tsx`)
+- [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
