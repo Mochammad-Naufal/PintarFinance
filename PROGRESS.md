@@ -42,10 +42,11 @@ Status Legend:
 ---
 
 ## Phase 4: Transaction Engine & Atomic Ledger
-- [ ] Server Action: `createTransaction` dengan ACID transaction (update atomic saldo wallet & tabungan)
-- [ ] Server Action: `deleteTransaction` & `updateTransaction` dengan rollback/revert balance otomatis
-- [ ] UI Komponen: Modal Form Transaksi Manual (Expense, Income, Transfer, Save to Goal)
-- [ ] UI Komponen: Feed/Daftar Riwayat Transaksi dengan filter (dompet, kategori, rentang tanggal)
+- [x] Server Action: `createTransaction` dengan ACID transaction (update atomic saldo wallet & tabungan)
+- [x] Server Action: `deleteTransaction` dengan rollback/revert balance otomatis
+- [x] UI Komponen: Modal Form Transaksi Manual (Expense, Income, Transfer, Save to Goal)
+- [x] UI Komponen: Feed/Daftar Riwayat Transaksi dengan filter (dompet, kategori, search)
+- [x] UI Komponen: Integrasi Widget Transaksi Terakhir di Dashboard
 
 ---
 
