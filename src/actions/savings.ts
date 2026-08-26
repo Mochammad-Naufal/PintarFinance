@@ -78,7 +78,7 @@ export async function getSavingsGoals(): Promise<SavingsGoal[]> {
       LEFT JOIN savings_goal_members m ON m.goal_id = s.id AND m.user_id = ${user.id}
       WHERE (s.user_id = ${user.id} OR m.user_id = ${user.id})
         AND s.deleted_at IS NULL
-      ORDER BY s.created_at ASC
+      ORDER BY s.created_at::text ASC
     `;
 
     if (rows.length === 0) return [];
