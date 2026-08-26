@@ -21,7 +21,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/profile",      label: "Profil",    icon: User     },
 ];
 
-
 // ─── BottomNav ────────────────────────────────────────────────────────────────
 
 export function BottomNav() {
@@ -29,7 +28,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-900/95 backdrop-blur-md border-t border-zinc-800/60"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800/80 transition-colors duration-150"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-center justify-around px-1 h-16">
@@ -43,11 +42,13 @@ export function BottomNav() {
               className={cn(
                 "flex flex-col items-center justify-center gap-1 min-w-[56px] h-full",
                 "transition-all duration-100 active:scale-[0.90]",
-                isActive ? "text-emerald-400" : "text-zinc-500 hover:text-zinc-300"
+                isActive
+                  ? "text-emerald-600 dark:text-emerald-400 font-medium"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               )}
             >
               <Icon className="w-5 h-5" strokeWidth={1.75} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px]">{label}</span>
             </Link>
           );
         })}
@@ -56,7 +57,7 @@ export function BottomNav() {
         <button
           className={cn(
             "flex items-center justify-center w-14 h-14 -mt-5 rounded-2xl shrink-0",
-            "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30",
+            "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25",
             "transition-all duration-100 active:scale-[0.90] hover:bg-emerald-400"
           )}
           aria-label="Tambah Transaksi"
@@ -74,11 +75,13 @@ export function BottomNav() {
               className={cn(
                 "flex flex-col items-center justify-center gap-1 min-w-[56px] h-full",
                 "transition-all duration-100 active:scale-[0.90]",
-                isActive ? "text-emerald-400" : "text-zinc-500 hover:text-zinc-300"
+                isActive
+                  ? "text-emerald-600 dark:text-emerald-400 font-medium"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               )}
             >
               <Icon className="w-5 h-5" strokeWidth={1.75} />
-              <span className="text-[10px] font-medium">{label}</span>
+              <span className="text-[10px]">{label}</span>
             </Link>
           );
         })}

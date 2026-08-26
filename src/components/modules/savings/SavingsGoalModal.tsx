@@ -97,13 +97,13 @@ function SavingsGoalForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Nama Impian / Target Tabungan
         </label>
         <input
@@ -112,13 +112,13 @@ function SavingsGoalForm({
           placeholder="e.g. Dana Darurat, Beli Motor, Liburan Jepang"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3.5 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+          className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
             Target Dana (IDR)
           </label>
           <input
@@ -127,12 +127,12 @@ function SavingsGoalForm({
             required
             value={targetAmount}
             onChange={(e) => setTargetAmount(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 tabular-nums placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+            className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
             Dana Terkumpul (IDR)
           </label>
           <input
@@ -141,26 +141,26 @@ function SavingsGoalForm({
             required
             value={currentAmount}
             onChange={(e) => setCurrentAmount(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 tabular-nums placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+            className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Tenggat Waktu Pencapaian (Opsional)
         </label>
         <input
           type="date"
           value={targetDate}
           onChange={(e) => setTargetDate(e.target.value)}
-          className="w-full px-3.5 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+          className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
         />
       </div>
 
       {/* Color Presets */}
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Warna Tema
         </label>
         <div className="flex items-center gap-2 flex-wrap">
@@ -171,7 +171,7 @@ function SavingsGoalForm({
               onClick={() => setColor(c)}
               className={`w-7 h-7 rounded-full transition-all ${
                 color === c
-                  ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-900 scale-110"
+                  ? "ring-2 ring-blue-500 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 scale-110"
                   : "opacity-80 hover:opacity-100"
               }`}
               style={{ backgroundColor: c }}
@@ -182,7 +182,7 @@ function SavingsGoalForm({
 
       {/* Icon Presets */}
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Ikon Impian
         </label>
         <div className="flex items-center gap-2 flex-wrap">
@@ -193,8 +193,8 @@ function SavingsGoalForm({
               onClick={() => setIcon(ic)}
               className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${
                 icon === ic
-                  ? "bg-zinc-800 border-emerald-500 text-emerald-400"
-                  : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  ? "bg-zinc-100 dark:bg-zinc-800 border-blue-500 text-blue-600 dark:text-blue-400 font-semibold"
+                  : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               <DynamicIcon name={ic} className="w-4 h-4" strokeWidth={1.75} />
@@ -204,18 +204,18 @@ function SavingsGoalForm({
       </div>
 
       {/* Footer buttons */}
-      <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-800/60">
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800/60">
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 active:scale-[0.98] transition-all"
+          className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.98] transition-all"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {initialData ? "Simpan Perubahan" : "Buat Pos Impian"}
@@ -234,16 +234,16 @@ export function SavingsGoalModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-zinc-100">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             {initialData ? "Edit Pos Impian" : "Tambah Pos Impian Baru"}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <X className="w-4 h-4" />
           </button>

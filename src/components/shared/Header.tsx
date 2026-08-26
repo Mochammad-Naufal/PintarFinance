@@ -2,8 +2,7 @@
 
 import { Bell, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/shared/ThemeProvider";
-import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
@@ -12,13 +11,13 @@ export function Header() {
   const today = formatDate(new Date(), "EEEE, d MMMM yyyy");
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-4 h-16 shrink-0 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/60">
+    <header className="sticky top-0 z-40 flex items-center justify-between px-4 h-16 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800/80 transition-colors duration-150">
       {/* Left: Greeting + date */}
       <div className="flex flex-col justify-center">
-        <h1 className="text-sm font-semibold text-zinc-100 leading-none">
+        <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-none">
           Selamat Datang 👋
         </h1>
-        <p className="text-[11px] text-zinc-500 mt-0.5 hidden sm:block capitalize">
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize">
           {today}
         </p>
       </div>
@@ -28,8 +27,8 @@ export function Header() {
         {/* Notification */}
         <button
           className={cn(
-            "p-2 rounded-lg text-zinc-400",
-            "hover:text-zinc-200 hover:bg-zinc-800",
+            "p-2 rounded-lg text-zinc-600 dark:text-zinc-400",
+            "hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
             "transition-all duration-100 active:scale-[0.95]"
           )}
           aria-label="Notifikasi"
@@ -41,27 +40,27 @@ export function Header() {
         <button
           onClick={toggle}
           className={cn(
-            "p-2 rounded-lg text-zinc-400",
-            "hover:text-zinc-200 hover:bg-zinc-800",
+            "p-2 rounded-lg text-zinc-600 dark:text-zinc-400",
+            "hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
             "transition-all duration-100 active:scale-[0.95]"
           )}
           aria-label={theme === "dark" ? "Mode terang" : "Mode gelap"}
         >
           {theme === "dark" ? (
-            <Sun className="w-4 h-4" strokeWidth={1.75} />
+            <Sun className="w-4 h-4 text-amber-400" strokeWidth={1.75} />
           ) : (
-            <Moon className="w-4 h-4" strokeWidth={1.75} />
+            <Moon className="w-4 h-4 text-zinc-700" strokeWidth={1.75} />
           )}
         </button>
 
         {/* User avatar */}
-        <div className="flex items-center gap-2.5 pl-1 ml-1 border-l border-zinc-800">
-          <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-emerald-400">D</span>
+        <div className="flex items-center gap-2.5 pl-2 ml-1 border-l border-zinc-200 dark:border-zinc-800">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">D</span>
           </div>
           <div className="hidden md:block pr-1">
-            <p className="text-xs font-semibold text-zinc-200 leading-none">Demo User</p>
-            <p className="text-[10px] text-zinc-500 mt-0.5">Free Plan</p>
+            <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 leading-none">Demo User</p>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">Free Plan</p>
           </div>
         </div>
       </div>

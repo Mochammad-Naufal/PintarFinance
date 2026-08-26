@@ -67,39 +67,39 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Banner & Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800/60">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs">
+          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Total Dana Terkumpul
           </p>
-          <p className="text-2xl font-bold tracking-tight text-emerald-400 tabular-nums mt-1">
+          <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-mono tabular-nums mt-1">
             {formatCurrency(totalCurrent)}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
             Dari {goals.length} target impian
           </p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800/60">
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs">
+          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Total Target Finansial
           </p>
-          <p className="text-2xl font-bold tracking-tight text-zinc-100 tabular-nums mt-1">
+          <p className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white font-mono tabular-nums mt-1">
             {formatCurrency(totalTarget)}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">Akumulasi seluruh impian</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Akumulasi seluruh impian</p>
         </div>
 
-        <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800/60 flex flex-col justify-between">
+        <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                 Rata-rata Capaian
               </p>
-              <span className="text-xs font-bold text-blue-400 tabular-nums">
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums">
                 {overallPercentage}%
               </span>
             </div>
-            <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden mt-2">
+            <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden mt-2">
               <div
                 className="h-full rounded-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${overallPercentage}%` }}
@@ -109,7 +109,7 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
 
           <button
             onClick={handleOpenAdd}
-            className="mt-4 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white font-medium text-xs hover:bg-blue-500 active:scale-[0.98] transition-all"
+            className="mt-4 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 text-white font-medium text-xs hover:bg-blue-500 active:scale-[0.98] transition-all shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" strokeWidth={2} />
             Tambah Impian Baru
@@ -119,21 +119,21 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
 
       {/* Goals Grid */}
       {goals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-zinc-900 border border-dashed border-zinc-800 text-center space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-zinc-800/50 flex items-center justify-center text-zinc-500">
+        <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-white dark:bg-zinc-900/40 border border-dashed border-zinc-300 dark:border-zinc-800 text-center space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 flex items-center justify-center text-zinc-500">
             <Target className="w-6 h-6" strokeWidth={1.5} />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-zinc-200">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-200">
               Belum Ada Pos Impian
             </h3>
-            <p className="text-xs text-zinc-500 mt-1 max-w-xs">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
               Mulai buat pos tabungan untuk dana darurat, beli kendaraan, atau rencana masa depanmu.
             </p>
           </div>
           <button
             onClick={handleOpenAdd}
-            className="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 active:scale-[0.98] transition-all"
+            className="mt-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 active:scale-[0.98] transition-all shadow-xs"
           >
             Buat Impian Pertama
           </button>

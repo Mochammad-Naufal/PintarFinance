@@ -78,13 +78,13 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400">
+        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
           {error}
         </div>
       )}
 
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Nama Dompet / Rekening
         </label>
         <input
@@ -93,12 +93,12 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
           placeholder="e.g. BCA Utama, GoPay, Dompet Tunai"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-3.5 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+          className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
         />
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Tipe Dompet
         </label>
         <div className="grid grid-cols-3 gap-2">
@@ -109,8 +109,8 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
               onClick={() => setType(t)}
               className={`py-2 px-3 rounded-lg text-xs font-medium border transition-all ${
                 type === t
-                  ? "bg-zinc-800 border-emerald-500 text-zinc-100"
-                  : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  ? "bg-zinc-100 dark:bg-zinc-800 border-emerald-500 text-zinc-900 dark:text-zinc-100 font-semibold"
+                  : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               {t === "bank" ? "Bank" : t === "ewallet" ? "E-Wallet" : "Kas Tunai"}
@@ -120,7 +120,7 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Saldo Saat Ini (IDR)
         </label>
         <input
@@ -129,13 +129,13 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
           required
           value={balance}
           onChange={(e) => setBalance(e.target.value)}
-          className="w-full px-3.5 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-sm text-zinc-100 tabular-nums placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+          className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
         />
       </div>
 
       {/* Color Presets */}
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Warna Identitas
         </label>
         <div className="flex items-center gap-2 flex-wrap">
@@ -146,7 +146,7 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
               onClick={() => setColor(c)}
               className={`w-7 h-7 rounded-full transition-all ${
                 color === c
-                  ? "ring-2 ring-white ring-offset-2 ring-offset-zinc-900 scale-110"
+                  ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 scale-110"
                   : "opacity-80 hover:opacity-100"
               }`}
               style={{ backgroundColor: c }}
@@ -157,7 +157,7 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
 
       {/* Icon Presets */}
       <div>
-        <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+        <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
           Ikon Dompet
         </label>
         <div className="flex items-center gap-2 flex-wrap">
@@ -168,8 +168,8 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
               onClick={() => setIcon(ic)}
               className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${
                 icon === ic
-                  ? "bg-zinc-800 border-emerald-500 text-emerald-400"
-                  : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                  ? "bg-zinc-100 dark:bg-zinc-800 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-semibold"
+                  : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               }`}
             >
               <DynamicIcon name={ic} className="w-4 h-4" strokeWidth={1.75} />
@@ -179,18 +179,18 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
       </div>
 
       {/* Footer buttons */}
-      <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-800/60">
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800/60">
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 active:scale-[0.98] transition-all"
+          className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.98] transition-all"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-50"
         >
           {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
           {initialData ? "Simpan Perubahan" : "Buat Dompet"}
@@ -209,16 +209,16 @@ export function WalletModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="w-full max-w-md rounded-2xl bg-zinc-900 border border-zinc-800 p-6 shadow-2xl space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 dark:bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-zinc-100">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
             {initialData ? "Edit Dompet" : "Tambah Dompet Baru"}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800"
+            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             <X className="w-4 h-4" />
           </button>

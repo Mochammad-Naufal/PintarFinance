@@ -8,11 +8,13 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -33,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
       <head>
         {/*
@@ -50,9 +52,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body
         className={[
           "min-h-full",
-          "bg-zinc-950 text-zinc-50",
+          "bg-zinc-50 dark:bg-zinc-950",
+          "text-zinc-900 dark:text-zinc-100",
           "font-sans",
-          "[font-variant-numeric:tabular-nums]", // tabular numbers for all financial figures
+          "[font-variant-numeric:tabular-nums]",
+          "selection:bg-emerald-500 selection:text-white",
         ].join(" ")}
       >
         <ThemeProvider>{children}</ThemeProvider>

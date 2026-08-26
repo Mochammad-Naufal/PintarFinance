@@ -39,7 +39,7 @@ export function SavingsGoalCard({
   };
 
   return (
-    <div className="relative p-5 rounded-2xl bg-zinc-900 border border-zinc-800/60 hover:border-zinc-700/80 transition-all duration-150 flex flex-col justify-between overflow-hidden">
+    <div className="relative p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs hover:border-zinc-300 dark:hover:border-zinc-700/80 transition-all duration-150 flex flex-col justify-between overflow-hidden">
       {/* Top accent bar */}
       <div
         className="absolute top-0 left-0 right-0 h-1"
@@ -53,7 +53,7 @@ export function SavingsGoalCard({
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{
-                backgroundColor: `${goal.color || "#3b82f6"}20`,
+                backgroundColor: `${goal.color || "#3b82f6"}15`,
                 color: goal.color || "#3b82f6",
               }}
             >
@@ -61,17 +61,17 @@ export function SavingsGoalCard({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-zinc-100 truncate">
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                   {goal.name}
                 </h3>
                 {isCompleted && (
-                  <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 shrink-0">
+                  <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shrink-0">
                     <CheckCircle2 className="w-3 h-3" />
                     Tercapai
                   </span>
                 )}
               </div>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
                 {goal.target_date
                   ? `Tenggat: ${formatDate(goal.target_date)}`
                   : "Target Fleksibel"}
@@ -83,7 +83,7 @@ export function SavingsGoalCard({
           <div className="flex items-center gap-1">
             <button
               onClick={() => onEdit(goal)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 active:scale-[0.95] transition-all"
+              className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.95] transition-all"
               title="Edit Target"
             >
               <Pencil className="w-4 h-4" strokeWidth={1.75} />
@@ -91,11 +91,11 @@ export function SavingsGoalCard({
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 active:scale-[0.95] transition-all disabled:opacity-50"
+              className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 active:scale-[0.95] transition-all disabled:opacity-50"
               title="Hapus Target"
             >
               {isDeleting ? (
-                <Loader2 className="w-4 h-4 animate-spin text-rose-400" strokeWidth={1.75} />
+                <Loader2 className="w-4 h-4 animate-spin text-rose-500" strokeWidth={1.75} />
               ) : (
                 <Trash2 className="w-4 h-4" strokeWidth={1.75} />
               )}
@@ -106,17 +106,17 @@ export function SavingsGoalCard({
         {/* Progress Bar & Percent */}
         <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-zinc-200 tabular-nums">
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200 font-mono tabular-nums">
               {percentage}%
             </span>
-            <span className="text-zinc-500">
+            <span className="text-zinc-500 dark:text-zinc-400">
               {isCompleted
                 ? "Target Terpenuhi!"
                 : `Kurang ${formatCurrency(remaining)}`}
             </span>
           </div>
 
-          <div className="w-full h-2 rounded-full bg-zinc-800 overflow-hidden">
+          <div className="w-full h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
@@ -128,22 +128,22 @@ export function SavingsGoalCard({
         </div>
       </div>
 
-      {/* Amounts */}
-      <div className="mt-5 pt-4 border-t border-zinc-800/40 flex items-center justify-between">
+      {/* Amounts (Solid monochrome typography) */}
+      <div className="mt-5 pt-4 border-t border-zinc-100 dark:border-zinc-800/40 flex items-center justify-between">
         <div>
-          <p className="text-[10px] uppercase font-medium text-zinc-500">
+          <p className="text-[10px] uppercase font-medium text-zinc-500 dark:text-zinc-400">
             Terkumpul
           </p>
-          <p className="text-base font-bold text-zinc-100 tabular-nums mt-0.5">
+          <p className="text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums mt-0.5">
             {formatCurrency(goal.current_amount)}
           </p>
         </div>
 
         <div className="text-right">
-          <p className="text-[10px] uppercase font-medium text-zinc-500">
+          <p className="text-[10px] uppercase font-medium text-zinc-500 dark:text-zinc-400">
             Target
           </p>
-          <p className="text-base font-medium text-zinc-400 tabular-nums mt-0.5">
+          <p className="text-base font-medium text-zinc-600 dark:text-zinc-400 font-mono tabular-nums mt-0.5">
             {formatCurrency(goal.target_amount)}
           </p>
         </div>

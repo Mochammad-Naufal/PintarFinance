@@ -12,7 +12,7 @@ You are a Lead Product Designer & Senior Fullstack Engineer specializing in buil
 - **Language:** TypeScript (Strict Mode enabled, NO `any`)
 - **Database:** Supabase / PostgreSQL
 - **ORM:** Drizzle ORM (Schema-as-code via TypeScript)
-- **Styling:** Tailwind CSS v4 + shadcn/ui (customized tokens)
+- **Styling:** Tailwind CSS v4 + shadcn/ui (customized semantic tokens)
 - **Icons:** Lucide React (configured with strict stroke width and sizing)
 - **Validation:** Zod (mandatory for all data mutations & API payloads)
 - **State & Server Mutation:** Server Actions
@@ -27,7 +27,7 @@ src/
 │   └── layout.tsx          # Root layout with ThemeProvider & font setup
 ├── components/
 │   ├── ui/                 # Atomic UI primitives (shadcn/ui customized tokens)
-│   ├── shared/             # Navbar, Sidebar, BottomNav, Header
+│   ├── shared/             # Navbar, Sidebar, BottomNav, Header, ThemeProvider
 │   └── modules/            # Domain-specific components (wallet-card, transaction-modal)
 ├── db/
 │   ├── schema/             # Drizzle table definitions & relations
@@ -38,51 +38,86 @@ src/
 │   └── utils.ts            # Formatting helpers (formatCurrency, formatDate)
 └── types/                  # Global types & Zod validation schemas
 
-3. Strict UI/UX & Anti-Generic Design Directives
-A. Aesthetics & Visual Hierarchy (Avoid AI Clichés)
-NO Purple/Indigo AI Clichés: Strictly avoid the generic "AI SaaS" color palette (e.g., generic purple-to-blue linear gradients, glowing AI badges everywhere).
+3. Strict UI/UX, Anti-Generic & Dual-Theme Directives
+A. Typography & Neutral Hierarchy (High Readability)
+Modern Sans-Serif Foundation:
 
-Fintech Precision Palette:
+Primary UI Font: Geist Sans or Inter (font-sans).
 
-Dark Neutral Foundation: Deep charcoal/slate backgrounds (zinc-950 / neutral-900) instead of pure black #000000 or washed-out gray #1e1e1e.
+Strict Ban on Serif Fonts: NEVER use Serif fonts for logos, headings, or numbers.
 
-Surface Contrast: Distinguish card levels using subtle border opacities (border-zinc-800/60), muted surfaces (zinc-900/50), and backdrop blur (backdrop-blur-md) rather than heavy drop shadows.
+Financial Monospace Precision:
 
-Intentional Accents:
+Font Mono: Geist Mono or JetBrains Mono (font-mono).
 
-Income/Positive: Emerald green (emerald-500 / emerald-400).
+Always enforce tabular numbers (tabular-nums / font-variant-numeric: tabular-nums) for ALL monetary figures to maintain vertical column alignment.
 
-Expense/Negative: Muted crimson/rose (rose-500 / rose-400).
+NO Rainbow AI Gradients on Numbers:
 
-Brand / Primary Action: Deep Forest/Mint Green or High-contrast Electric Lime / Crisp White on dark surfaces.
+Strictly prohibit multi-color rainbow/purple gradients on financial values.
 
-Typography & Numeral Formatting:
+Render financial totals in clean solid contrast:
 
-Use tabular numbers (font-mono or CSS font-variant-numeric: tabular-nums) for ALL financial figures to ensure clean vertical alignment in lists and tables.
+Dark Mode: text-zinc-50 font-bold font-mono
 
-Establish clear scale hierarchy: Mega numbers (text-3xl font-bold tracking-tight) for Net Worth, crisp uppercase labels (text-xs font-medium uppercase tracking-wider text-zinc-400) for metadata.
+Light Mode: text-zinc-900 font-bold font-mono
 
-B. Mobile-First Layout & Spatial Density
+Functional Accents ONLY:
+
+Positive / Income: text-emerald-600 dark:text-emerald-400
+
+Negative / Expense: text-rose-600 dark:text-rose-400
+
+B. Dual-Theme Contrast Architecture (Seamless Light / Dark Switching)
+All layout containers and surfaces MUST provide explicit dark and light mode styling tokens:
+
+Base Background:
+
+Dark Mode: dark:bg-zinc-950 dark:text-zinc-100
+
+Light Mode: bg-zinc-50 text-zinc-900
+
+Shell Glassmorphism (Sidebar, Header, BottomNav):
+
+Dark Mode: dark:bg-zinc-950/80 dark:border-zinc-800/80 backdrop-blur-xl
+
+Light Mode: bg-white/80 border-zinc-200/80 backdrop-blur-xl
+
+Surface Cards & Containers:
+
+Dark Mode: dark:bg-zinc-900/60 dark:border-zinc-800/80 dark:hover:border-zinc-700/80
+
+Light Mode: bg-white border-zinc-200/80 shadow-xs hover:border-zinc-300
+
+Inset List Items (Wallets & Savings):
+
+Dark Mode: dark:bg-zinc-900/90 dark:border-zinc-800/50 dark:hover:bg-zinc-800/50
+
+Light Mode: bg-zinc-50/90 border-zinc-200/70 hover:bg-zinc-100/70
+
+Theme Transitions:
+
+Add smooth transitions on root containers: transition-colors duration-200.
+
+C. Mobile-First Layout & Spatial Density
 Thumb-Zone Navigation:
 
-On mobile screens, critical actions (Add Transaction button, Quick Scan, Navigation) MUST live in a fixed Bottom Navigation Bar or floating action trigger reachable with one thumb.
+Critical mobile actions (Add Transaction FAB, BottomNav bar) MUST reside within thumb reach with proper safe-area insets (env(safe-area-inset-bottom)).
 
 Spatial Rhythm & Padding:
 
-Keep padding tight and compact (p-4 to p-5 on mobile cards). Avoid bloated whitespace that forces unnecessary scrolling.
+Maintain compact mobile density (p-4 to p-5). Avoid gratuitous white-space that forces scroll fatigue.
 
-Use consistent rounded corners (rounded-xl or rounded-2xl for containers, rounded-lg for inputs/buttons). Never mix completely circular cards with sharp squared buttons.
+Use unified border radii: rounded-2xl for parent cards, rounded-xl for inset elements, rounded-lg for buttons/inputs.
 
-C. Iconography & Visual Polish
-Icon Rules: Use Lucide React with a consistent strokeWidth={1.75} and compact size (w-4 h-4 or w-5 h-5). Never use mismatched icon sizes or heavy default 2px/3px strokes.
+D. Iconography & Visual Polish
+Icon Standards: Lucide React with consistent strokeWidth={1.75} and explicit sizing (w-4 h-4 or w-5 h-5).
 
 Micro-States & Feedback:
 
-Buttons MUST have active press feedback (active:scale-[0.98] transition-transform duration-100).
+Interactive triggers MUST include active scale feedback: active:scale-[0.98] transition-transform duration-100.
 
-Transaction lists must have distinct icon category badges with muted background tints (e.g., bg-emerald-500/10 text-emerald-400 for food, bg-blue-500/10 text-blue-400 for transport).
-
-Provide bespoke Skeletons matching exact card geometry during loading states.
+Provide dedicated Loading Skeletons mirroring card geometry during data fetches.
 
 4. Strict Engineering & Financial Constraints
 Financial Integrity (ACID Transactions):
@@ -91,7 +126,7 @@ ALL balance mutations (adding expense/income, wallet transfers, allocating to sa
 
 Balances must never be out-of-sync with transaction ledger logs.
 
-Money values are stored as integers (in IDR). Never use floating-point math for balance calculations.
+Money values are stored as bigint integers in IDR. Never use floating-point math for balance calculations.
 
 Package Restriction:
 
@@ -110,6 +145,6 @@ Check Contract: Read SCHEMA.md and PRD.md to ensure aligned entity relations and
 
 Schema & Actions First: Implement database schema updates, Zod schemas, and Server Actions before building the UI.
 
-UI Integration: Build polished UI adhering to the Anti-Generic Design rules above, including loading skeletons, empty states, and error toasts.
+UI Integration: Build polished UI adhering to the Dual-Theme & High Readability rules above, including loading skeletons, empty states, and error toasts.
 
 Self-Verification: Run npx tsc --noEmit and npm run lint to fix any type mismatches before reporting the task as complete.
