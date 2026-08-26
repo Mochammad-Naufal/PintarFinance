@@ -106,3 +106,12 @@ Status Legend:
 - [x] Refactor seluruh Server Actions (`wallets.ts`, `transactions.ts`, `savings.ts`, `budgets.ts`, `analytics.ts`, `export.ts`, `ai.ts`) dengan `WHERE user_id = user.id` untuk isolasi data 100%
 - [x] UI Menu Profile & Sign Out dinamis di Header (`UserProfileMenu.tsx`) dan Sidebar
 - [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
+
+---
+
+## Phase 11: Recurring Transactions & Subscription Management
+- [x] Database Schema: Tabel `recurring_transactions` dengan frekuensi (daily, weekly, monthly, yearly), `next_run_date`, `auto_create`, dan index per user
+- [x] Server Actions: `getRecurringTransactions`, `createRecurringTransaction`, `updateRecurringTransaction`, `deleteRecurringTransaction`, `toggleRecurringStatus`, `processRecurringTransactionNow` (`src/actions/recurring.ts`)
+- [x] UI Komponen: `RecurringModal` (form tambah/edit jadwal), `RecurringCard` (status aktif/jeda, countdown jatuh tempo, tombol "Catat Sekarang"), `RecurringList` (ringkasan estimasi komitmen bulanan & banner pengingat tagihan jatuh tempo)
+- [x] Navigasi Transaksi Terintegrasi: `TransactionsViewTabs` di `src/app/(dashboard)/transactions/page.tsx` dengan indikator badge tagihan jatuh tempo
+- [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)

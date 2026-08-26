@@ -172,12 +172,35 @@ async function createTables() {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS recurring_transactions (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      wallet_id     UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+      category_id   UUID REFERENCES categories(id) ON DELETE SET NULL,
+      type          VARCHAR(20) NOT NULL CHECK (type IN ('expense','income')),
+      amount        BIGINT NOT NULL,
+      frequency     VARCHAR(20) NOT NULL CHECK (frequency IN ('daily','weekly','monthly','yearly')),
+      start_date    DATE NOT NULL,
+      next_run_date DATE NOT NULL,
+      last_run_date DATE,
+      description   VARCHAR(255) NOT NULL,
+      is_active     BOOLEAN NOT NULL DEFAULT true,
+      auto_create   BOOLEAN NOT NULL DEFAULT false,
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+      deleted_at    TIMESTAMPTZ
+    )
+  `;
+
   // Indexes
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_user_date  ON transactions (user_id, transaction_date DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_wallet      ON transactions (wallet_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_category    ON transactions (category_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_budgets_user_period      ON budgets (user_id, period)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_savings_user             ON savings_goals (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_recurring_user           ON recurring_transactions (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_recurring_next_run       ON recurring_transactions (next_run_date)`;
 
   console.log("✅  Tables & indexes ready");
 }
@@ -515,6 +538,96 @@ async function seedTransactions() {
   }
 }
 
+// ─── Step 8: Seed Recurring Transactions ──────────────────────────────────────
+async function seedRecurringTransactions() {
+  console.log("\n🔁  Seeding recurring transactions & subscriptions...");
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const in3Days = new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const in5Days = new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const in25Days = new Date(today.getTime() + 25 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const recurring = [
+    {
+      user_id: ID.user,
+      wallet_id: ID.wallet.bca,
+      category_id: ID.cat.tagihan,
+      type: "expense",
+      amount: 186_000,
+      frequency: "monthly",
+      start_date: todayStr,
+      next_run_date: in3Days,
+      description: "Netflix Premium 4K",
+      is_active: true,
+      auto_create: true,
+    },
+    {
+      user_id: ID.user,
+      wallet_id: ID.wallet.gopay,
+      category_id: ID.cat.hiburan,
+      type: "expense",
+      amount: 86_900,
+      frequency: "monthly",
+      start_date: todayStr,
+      next_run_date: in5Days,
+      description: "Spotify Premium Family",
+      is_active: true,
+      auto_create: false,
+    },
+    {
+      user_id: ID.user,
+      wallet_id: ID.wallet.bca,
+      category_id: ID.cat.tagihan,
+      type: "expense",
+      amount: 385_000,
+      frequency: "monthly",
+      start_date: todayStr,
+      next_run_date: todayStr,
+      description: "Internet IndiHome 50 Mbps",
+      is_active: true,
+      auto_create: false,
+    },
+    {
+      user_id: ID.user,
+      wallet_id: ID.wallet.bca,
+      category_id: ID.cat.gaji,
+      type: "income",
+      amount: 8_500_000,
+      frequency: "monthly",
+      start_date: todayStr,
+      next_run_date: in25Days,
+      description: "Gaji Pokok Kantor",
+      is_active: true,
+      auto_create: true,
+    },
+  ];
+
+  for (const r of recurring) {
+    await sql`
+      INSERT INTO recurring_transactions (
+        user_id, wallet_id, category_id,
+        type, amount, frequency,
+        start_date, next_run_date,
+        description, is_active, auto_create
+      ) VALUES (
+        ${r.user_id},
+        ${r.wallet_id},
+        ${r.category_id},
+        ${r.type},
+        ${r.amount},
+        ${r.frequency},
+        ${r.start_date},
+        ${r.next_run_date},
+        ${r.description},
+        ${r.is_active},
+        ${r.auto_create}
+      )
+    `;
+    console.log(`   ✓  [${r.frequency}] Rp ${r.amount.toLocaleString("id-ID").padStart(10)} — ${r.description}`);
+  }
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log("🌱  Pintar Finance — Database Seeder");
@@ -530,6 +643,7 @@ async function main() {
     await seedSavingsGoals();
     await seedBudgets();
     await seedTransactions();
+    await seedRecurringTransactions();
 
     console.log("\n🎉  Seeding selesai! Database siap digunakan.");
     console.log("=====================================\n");

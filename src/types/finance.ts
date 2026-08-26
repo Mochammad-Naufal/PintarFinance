@@ -188,6 +188,59 @@ export interface TransactionFilter {
   offset?: number;
 }
 
+// ─── Recurring Transactions / Subscriptions Types & Schemas ─────────────────
+
+export type RecurringFrequency = "daily" | "weekly" | "monthly" | "yearly";
+
+export interface RecurringTransaction {
+  id: string;
+  user_id: string;
+  wallet_id: string;
+  category_id: string | null;
+  type: "expense" | "income";
+  amount: number;
+  frequency: RecurringFrequency;
+  start_date: string;
+  next_run_date: string;
+  last_run_date: string | null;
+  description: string;
+  is_active: boolean;
+  auto_create: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+
+  // Joined fields for UI
+  wallet_name?: string;
+  wallet_color?: string;
+  wallet_icon?: string;
+  category_name?: string;
+  category_icon?: string;
+  category_color?: string;
+}
+
+export const recurringSchema = z.object({
+  type: z.enum(["expense", "income"], {
+    message: "Pilih tipe transaksi berulang",
+  }),
+  wallet_id: z.string().min(1, "Pilih dompet pembayaran"),
+  category_id: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+  amount: z.coerce.number().min(100, "Nominal minimal Rp 100"),
+  frequency: z.enum(["daily", "weekly", "monthly", "yearly"], {
+    message: "Pilih frekuensi berulang",
+  }),
+  start_date: z.string().min(1, "Tanggal mulai/tagihan wajib diisi"),
+  description: z.string().min(1, "Nama langganan / tagihan wajib diisi"),
+  is_active: z.boolean().default(true),
+  auto_create: z.boolean().default(false),
+});
+
+export type RecurringInput = z.infer<typeof recurringSchema>;
+
 // ─── Budget Types & Schemas ──────────────────────────────────────────────────
 
 export type BudgetStatus = "safe" | "warning" | "danger";
