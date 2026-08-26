@@ -21,6 +21,30 @@ interface YearlyData {
   totalValue: number;
 }
 
+// ─── Input Sanitizer: Strips leading zeros and unwanted characters ───────────
+
+function sanitizeNumber(val: string, allowDecimals: boolean = false): string {
+  if (!val) return "";
+  let clean = allowDecimals
+    ? val.replace(/[^0-9.]/g, "")
+    : val.replace(/[^0-9]/g, "");
+
+  if (allowDecimals) {
+    const parts = clean.split(".");
+    if (parts.length > 2) {
+      clean = parts[0] + "." + parts.slice(1).join("");
+    }
+  }
+
+  // Strip leading zeros (e.g. "09999" -> "9999", "00" -> "0")
+  if (clean.length > 1 && clean.startsWith("0") && !clean.startsWith("0.")) {
+    clean = clean.replace(/^0+/, "");
+    if (clean === "") clean = "0";
+  }
+
+  return clean;
+}
+
 export function CompoundInterestCalculator() {
   const [principal, setPrincipal] = useState<string>("10000000");
   const [monthlyContribution, setMonthlyContribution] = useState<string>("1500000");
@@ -94,7 +118,6 @@ export function CompoundInterestCalculator() {
     return {
       P_val: P,
       PMT_val: PMT,
-      r_val: r,
       t_val: t,
       yearlyBreakdown: breakdown,
       finalTotalValue: finalVal,
@@ -156,8 +179,8 @@ export function CompoundInterestCalculator() {
                 placeholder="0"
                 value={principal}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setPrincipal(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                onChange={(e) => setPrincipal(sanitizeNumber(e.target.value))}
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
             {/* Quick Chips */}
@@ -195,8 +218,8 @@ export function CompoundInterestCalculator() {
                 placeholder="0"
                 value={monthlyContribution}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setMonthlyContribution(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                onChange={(e) => setMonthlyContribution(sanitizeNumber(e.target.value))}
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
             </div>
             {/* Quick Chips */}
@@ -227,8 +250,8 @@ export function CompoundInterestCalculator() {
                 placeholder="0"
                 value={annualRate}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setAnnualRate(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                onChange={(e) => setAnnualRate(sanitizeNumber(e.target.value, true))}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <div className="flex items-center gap-1 pt-0.5">
                 {[6, 10, 15].map((rate) => (
@@ -255,8 +278,8 @@ export function CompoundInterestCalculator() {
                 placeholder="1"
                 value={years}
                 onFocus={(e) => e.target.select()}
-                onChange={(e) => setYears(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                onChange={(e) => setYears(sanitizeNumber(e.target.value))}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <div className="flex items-center gap-1 pt-0.5">
                 {[5, 10, 20].map((yr) => (
