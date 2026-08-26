@@ -303,7 +303,7 @@ export async function getModuleAIAnalysis(
         SELECT 
           b.id,
           b.category_id,
-          b.amount AS limit_amount,
+          b.limit_amount,
           c.name AS category_name,
           COALESCE(SUM(t.amount), 0) AS spent_amount
         FROM budgets b
@@ -315,7 +315,7 @@ export async function getModuleAIAnalysis(
           AND to_char(t.transaction_date, 'YYYY-MM') = ${period}
         WHERE b.user_id = ${user.id}
           AND b.period = ${period}
-        GROUP BY b.id, b.category_id, b.amount, c.name
+        GROUP BY b.id, b.category_id, b.limit_amount, c.name
       `;
 
       const budgets = budgetRows.map((b) => {

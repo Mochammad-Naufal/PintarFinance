@@ -130,7 +130,7 @@ export async function sendFinancialChatMessage(
         WHERE user_id = ${user.id} AND deleted_at IS NULL
       `,
       sql`
-        SELECT b.amount AS limit_amount, c.name AS category_name
+        SELECT b.limit_amount, c.name AS category_name
         FROM budgets b
         JOIN categories c ON c.id = b.category_id
         WHERE b.user_id = ${user.id} AND b.period = ${period}
