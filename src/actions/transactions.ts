@@ -301,7 +301,7 @@ export async function createTransaction(
             is_completed = (current_amount + ${amount} >= target_amount),
             updated_at = now()
           WHERE id = ${savings_goal_id}
-            AND user_id = ${user.id}
+            AND (user_id = ${user.id} OR id IN (SELECT goal_id FROM savings_goal_members WHERE user_id = ${user.id}))
         `;
       }
 
@@ -443,7 +443,7 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
             is_completed = (GREATEST(0, current_amount - ${amount}) >= target_amount),
             updated_at = now()
           WHERE id = ${savings_goal_id}
-            AND user_id = ${user.id}
+            AND (user_id = ${user.id} OR id IN (SELECT goal_id FROM savings_goal_members WHERE user_id = ${user.id}))
         `;
       }
     });

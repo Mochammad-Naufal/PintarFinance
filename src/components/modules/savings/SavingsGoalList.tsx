@@ -5,9 +5,11 @@ import { Plus, Target } from "lucide-react";
 import { type SavingsGoal, type SavingsGoalInput } from "@/types/finance";
 import { SavingsGoalCard } from "./SavingsGoalCard";
 import { SavingsGoalModal } from "./SavingsGoalModal";
+import { InviteMemberModal } from "./InviteMemberModal";
 import {
   createSavingsGoal,
   deleteSavingsGoal,
+  leaveSavingsGoal,
   updateSavingsGoal,
 } from "@/actions/savings";
 import { formatCurrency } from "@/lib/utils";
@@ -20,6 +22,7 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
   const [goals, setGoals] = useState<SavingsGoal[]>(initialGoals);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
+  const [invitingGoal, setInvitingGoal] = useState<SavingsGoal | null>(null);
 
   const totalCurrent = goals.reduce((acc, g) => acc + g.current_amount, 0);
   const totalTarget = goals.reduce((acc, g) => acc + g.target_amount, 0);
@@ -41,7 +44,7 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
       const res = await updateSavingsGoal(editingGoal.id, data);
       if (res.success && res.data) {
         setGoals((prev) =>
-          prev.map((g) => (g.id === editingGoal.id ? res.data! : g))
+          prev.map((g) => (g.id === editingGoal.id ? { ...g, ...res.data! } : g))
         );
       }
       return res;
@@ -60,6 +63,16 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
       setGoals((prev) => prev.filter((g) => g.id !== id));
     } else {
       alert(res.error ?? "Gagal menghapus target impian");
+    }
+  };
+
+  const handleLeave = async (id: string) => {
+    const res = await leaveSavingsGoal(id);
+    if (res.success) {
+      setGoals((prev) => prev.filter((g) => g.id !== id));
+      alert("Anda telah keluar dari pos tabungan bersama.");
+    } else {
+      alert(res.error ?? "Gagal keluar dari pos tabungan");
     }
   };
 
@@ -128,7 +141,7 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
               Belum Ada Pos Impian
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
-              Mulai buat pos tabungan untuk dana darurat, beli kendaraan, atau rencana masa depanmu.
+              Mulai buat pos tabungan untuk dana darurat, beli kendaraan, atau rencana masa depanmu bersama pasangan/rekan.
             </p>
           </div>
           <button
@@ -146,17 +159,26 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
               goal={goal}
               onEdit={handleOpenEdit}
               onDelete={handleDelete}
+              onLeave={handleLeave}
+              onInvite={(g) => setInvitingGoal(g)}
             />
           ))}
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add / Edit Modal */}
       <SavingsGoalModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         initialData={editingGoal}
+      />
+
+      {/* Invite Member Modal */}
+      <InviteMemberModal
+        isOpen={!!invitingGoal}
+        onClose={() => setInvitingGoal(null)}
+        goal={invitingGoal}
       />
     </div>
   );

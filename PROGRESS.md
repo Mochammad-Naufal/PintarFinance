@@ -124,3 +124,12 @@ Status Legend:
 - [x] Evaluator Peringatan Otomatis: Deteksi cerdas Budget Warning ($\ge 80\%$ & $\ge 100\%$), Tagihan Berulang Jatuh Tempo (H-1 & Hari H), dan Target Impian Tercapai 100% (dengan idempotency guardrails)
 - [x] UI Komponen: `NotificationDropdown` di Header global dengan badge count unread, ikon tematik per tipe notifikasi, aksi "Tandai Semua Dibaca", dan navigasi langsung ke halaman terkait
 - [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
+
+---
+
+## Phase 13: Shared Savings Goals & Member Invite System
+- [x] Database Schema: Tabel `savings_goal_members` (`goal_id`, `user_id`, `role`, `joined_at`) & `savings_goal_invites` (`goal_id`, `inviter_id`, `invite_code`, `expires_at`)
+- [x] Server Actions: `getSavingsGoals` (query owned & joined goals + aggregate contributions per member), `createSavingsInviteLink`, `getSavingsInviteDetails`, `joinSavingsGoalWithCode`, `leaveSavingsGoal` (`src/actions/savings.ts`)
+- [x] Atomic Transaction Integration: `createTransaction` & `deleteTransaction` disesuaikan agar anggota dapat menyetor dan mengakumulasi saldo ke pos tabungan bersama
+- [x] UI Komponen: `SavingsGoalCard` (badge Tabungan Bersama, stacked avatars, rincian kontribusi per anggota, kontrol peran owner vs member), `InviteMemberModal` (salin link 1-klik, share WhatsApp, daftar anggota), `JoinSavingsPage` di `/savings/join`
+- [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)

@@ -206,12 +206,38 @@ async function createTables() {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS savings_goal_members (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      goal_id     UUID NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
+      user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role        VARCHAR(20) NOT NULL CHECK (role IN ('owner','member')) DEFAULT 'member',
+      joined_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      UNIQUE (goal_id, user_id)
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS savings_goal_invites (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      goal_id     UUID NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
+      inviter_id  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      invite_code VARCHAR(32) UNIQUE NOT NULL,
+      expires_at  TIMESTAMPTZ NOT NULL,
+      is_used     BOOLEAN NOT NULL DEFAULT false,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
   // Indexes
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_user_date  ON transactions (user_id, transaction_date DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_wallet      ON transactions (wallet_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_category    ON transactions (category_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_budgets_user_period      ON budgets (user_id, period)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_savings_user             ON savings_goals (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_savings_members_user     ON savings_goal_members (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_savings_members_goal     ON savings_goal_members (goal_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_savings_invites_code     ON savings_goal_invites (invite_code)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_recurring_user           ON recurring_transactions (user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_recurring_next_run       ON recurring_transactions (next_run_date)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id, is_read)`;

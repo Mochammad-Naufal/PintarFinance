@@ -46,6 +46,32 @@ export interface Category {
 
 // ─── Savings Goal Types & Schemas ────────────────────────────────────────────
 
+export interface SavingsGoalMember {
+  id: string;
+  goal_id: string;
+  user_id: string;
+  role: "owner" | "member";
+  joined_at: string;
+  user_name?: string;
+  user_email?: string;
+  user_avatar?: string | null;
+  total_contributed?: number;
+}
+
+export interface SavingsGoalInvite {
+  id: string;
+  goal_id: string;
+  inviter_id: string;
+  invite_code: string;
+  expires_at: string;
+  is_used: boolean;
+  created_at: string;
+  goal_name?: string;
+  target_amount?: number;
+  current_amount?: number;
+  inviter_name?: string;
+}
+
 export interface SavingsGoal {
   id: string;
   user_id: string;
@@ -59,6 +85,12 @@ export interface SavingsGoal {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+
+  // Collaborative properties
+  is_shared?: boolean;
+  user_role?: "owner" | "member";
+  owner_name?: string;
+  members?: SavingsGoalMember[];
 }
 
 export const savingsGoalSchema = z.object({
