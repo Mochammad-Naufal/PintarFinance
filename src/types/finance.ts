@@ -217,6 +217,40 @@ export const budgetSchema = z.object({
 
 export type BudgetInput = z.infer<typeof budgetSchema>;
 
+// ─── Analytics Types ─────────────────────────────────────────────────────────
+
+export interface MonthlyCashflowTrend {
+  month: string; // 'YYYY-MM'
+  label: string; // 'Mar 26'
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface CategoryExpenseBreakdown {
+  category_id: string;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
+  amount: number;
+  percentage: number;
+}
+
+export interface DashboardAnalytics {
+  totalBalance: number;
+  totalSavings: number;
+  netWorth: number;
+  savingsRatio: number;
+  monthlyIncome: number;
+  monthlyExpense: number;
+  monthlyNet: number;
+  cashflowTrend: MonthlyCashflowTrend[];
+  categoryBreakdown: CategoryExpenseBreakdown[];
+  topSavingsGoals: SavingsGoal[];
+  recentTransactions: Transaction[];
+  currentPeriod: string;
+}
+
 // ─── Action Result Type ──────────────────────────────────────────────────────
 
 export interface ActionResult<T = unknown> {

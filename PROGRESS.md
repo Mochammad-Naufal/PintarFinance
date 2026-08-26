@@ -69,10 +69,11 @@ Status Legend:
 ---
 
 ## Phase 7: Dashboard Analytics & Data Visualization
-- [ ] Query agregasi data: Total Net Worth, Monthly Cashflow (In vs Out), Top Expense Categories
-- [ ] UI Komponen: Ringkasan Kartu Net Worth & Arus Kas
-- [ ] UI Komponen: Donut Chart Komposisi Pengeluaran & Bar Chart Cashflow Tren
-- [ ] UI Komponen: Ringkasan Cepat Progres Tabungan Impian di Dashboard
+- [x] Query agregasi data: Total Net Worth, Monthly Cashflow (In vs Out), Top Expense Categories (`src/actions/analytics.ts`)
+- [x] UI Komponen: Hero `NetWorthBanner` dengan rasio aset & indikator pertumbuhan
+- [x] UI Komponen: `CashflowChart` (Grafik batang tren arus kas 6 bulan berbasis SVG responsif)
+- [x] UI Komponen: `ExpenseCategoryChart` (Donut chart & breakdown komposisi pengeluaran)
+- [x] Refactor komprehensif Dashboard (`src/app/(dashboard)/dashboard/page.tsx`)
 
 ---
 
