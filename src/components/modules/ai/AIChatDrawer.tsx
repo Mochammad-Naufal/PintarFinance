@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { type ChatMessage, sendFinancialChatMessage } from "@/actions/ai-chat";
+import { ChatMessageContent } from "./ChatMessageContent";
 
 const QUICK_PROMPTS = [
   "💡 Bagaimana cara hemat 20% bulan ini?",
@@ -183,13 +184,16 @@ export function AIChatDrawer() {
 
                   {/* Message Bubble */}
                   <div
-                    className={`p-3 rounded-2xl max-w-[82%] leading-relaxed whitespace-pre-line ${
+                    className={`p-3.5 rounded-2xl max-w-[85%] leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-emerald-600 text-white rounded-tr-xs"
-                        : "bg-zinc-100 dark:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 rounded-tl-xs border border-zinc-200/60 dark:border-zinc-700/60"
+                        ? "bg-emerald-600 text-white rounded-tr-xs text-xs"
+                        : "bg-zinc-100 dark:bg-zinc-800/90 text-zinc-800 dark:text-zinc-200 rounded-tl-xs border border-zinc-200/60 dark:border-zinc-700/60 text-xs"
                     }`}
                   >
-                    {msg.content}
+                    <ChatMessageContent
+                      content={msg.content}
+                      isUser={msg.role === "user"}
+                    />
                   </div>
                 </div>
               ))}
