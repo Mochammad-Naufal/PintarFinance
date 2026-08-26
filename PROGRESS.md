@@ -59,11 +59,12 @@ Status Legend:
 ---
 
 ## Phase 6: Pintar AI Engine Integration
-- [ ] Setup API Client LLM / Structured Output di `src/lib/ai/`
-- [ ] Server Action/Endpoint: Natural Language Parsing (teks bahasa Indonesia -> JSON transaksi)
-- [ ] UI Komponen: Quick Entry Modal (Input teks/voice prompt + modal preview konfirmasi sebelum simpan)
-- [ ] Server Action/Endpoint: Vision Receipt OCR (upload gambar struk -> ekstrak merchant, item, total)
-- [ ] UI Komponen: Receipt Scanner Modal dengan preview parsing itemized data
+- [x] Setup AI Client & Natural Language Parser di `src/lib/ai/` (Indonesian NLP + Gemini Structured Output)
+- [x] Server Action: `parseQuickEntryText` (Natural language prompt -> structured transaction candidate)
+- [x] UI Komponen: `QuickEntryModal` dengan prompt chips & interactive confirmation review
+- [x] Server Action: `parseReceiptImage` (Vision OCR struk belanja -> itemized JSON)
+- [x] UI Komponen: `ReceiptScanModal` dengan thumbnail preview & itemized breakdown
+- [x] Navigasi: Integrasi Pintar AI Hub di `/ai`, Header button, dan Mobile BottomNav FAB
 
 ---
 

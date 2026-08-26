@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Moon, Sun } from "lucide-react";
+import Link from "next/link";
+import { Bell, Moon, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -23,7 +24,16 @@ export function Header() {
       </div>
 
       {/* Right: Actions row */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-2">
+        {/* Quick AI Trigger */}
+        <Link
+          href="/ai"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20 transition-all active:scale-[0.95]"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Pintar AI</span>
+        </Link>
+
         {/* Notification */}
         <button
           className={cn(

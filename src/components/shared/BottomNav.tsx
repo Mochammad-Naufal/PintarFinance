@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, type LucideIcon, PiggyBank, Plus, Receipt, User } from "lucide-react";
+import { Home, type LucideIcon, PiggyBank, Receipt, Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ─── Nav Items ────────────────────────────────────────────────────────────────
@@ -14,11 +14,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard",    label: "Home",      icon: Home     },
-  { href: "/transactions", label: "Transaksi", icon: Receipt  },
-  // Center FAB placeholder — rendered inline below
+  { href: "/dashboard",    label: "Home",      icon: Home      },
+  { href: "/transactions", label: "Transaksi", icon: Receipt   },
+  // Center FAB: /ai
   { href: "/savings",      label: "Tabungan",  icon: PiggyBank },
-  { href: "/profile",      label: "Profil",    icon: User     },
+  { href: "/profile",      label: "Profil",    icon: User      },
 ];
 
 // ─── BottomNav ────────────────────────────────────────────────────────────────
@@ -53,17 +53,18 @@ export function BottomNav() {
           );
         })}
 
-        {/* Center FAB — Floating Add Button */}
-        <button
+        {/* Center FAB — Floating Add with Pintar AI */}
+        <Link
+          href="/ai"
           className={cn(
             "flex items-center justify-center w-14 h-14 -mt-5 rounded-2xl shrink-0",
-            "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25",
-            "transition-all duration-100 active:scale-[0.90] hover:bg-emerald-400"
+            "bg-linear-to-tr from-emerald-600 to-teal-500 text-white shadow-lg shadow-emerald-500/25",
+            "transition-all duration-100 active:scale-[0.90] hover:brightness-110"
           )}
-          aria-label="Tambah Transaksi"
+          aria-label="Pintar AI Quick Scan"
         >
-          <Plus className="w-6 h-6" strokeWidth={2.25} />
-        </button>
+          <Sparkles className="w-6 h-6" strokeWidth={2} />
+        </Link>
 
         {/* Last 2 items: Tabungan, Profil */}
         {NAV_ITEMS.slice(2).map(({ href, label, icon: Icon }) => {
