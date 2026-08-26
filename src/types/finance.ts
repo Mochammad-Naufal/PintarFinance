@@ -304,6 +304,25 @@ export interface DashboardAnalytics {
   currentPeriod: string;
 }
 
+// ─── Notification Types ──────────────────────────────────────────────────────
+
+export type NotificationType =
+  | "budget_warning"
+  | "recurring_due"
+  | "goal_reached"
+  | "system";
+
+export interface AppNotification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link: string | null;
+  is_read: boolean;
+  created_at: string;
+}
+
 // ─── Action Result Type ──────────────────────────────────────────────────────
 
 export interface ActionResult<T = unknown> {
@@ -311,3 +330,4 @@ export interface ActionResult<T = unknown> {
   data?: T;
   error?: string;
 }
+

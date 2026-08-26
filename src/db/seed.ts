@@ -193,6 +193,19 @@ async function createTables() {
     )
   `;
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type        VARCHAR(30) NOT NULL CHECK (type IN ('budget_warning','recurring_due','goal_reached','system')),
+      title       VARCHAR(255) NOT NULL,
+      message     TEXT NOT NULL,
+      link        VARCHAR(255),
+      is_read     BOOLEAN NOT NULL DEFAULT false,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
   // Indexes
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_user_date  ON transactions (user_id, transaction_date DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_transactions_wallet      ON transactions (wallet_id)`;
@@ -201,6 +214,8 @@ async function createTables() {
   await sql`CREATE INDEX IF NOT EXISTS idx_savings_user             ON savings_goals (user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_recurring_user           ON recurring_transactions (user_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_recurring_next_run       ON recurring_transactions (next_run_date)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON notifications (user_id, is_read)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_notifications_user_date   ON notifications (user_id, created_at DESC)`;
 
   console.log("✅  Tables & indexes ready");
 }

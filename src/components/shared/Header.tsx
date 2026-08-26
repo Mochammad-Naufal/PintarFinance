@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Moon, Sparkles, Sun } from "lucide-react";
+import { Moon, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { cn, formatDate } from "@/lib/utils";
 import { UserProfileMenu } from "./UserProfileMenu";
+import { NotificationDropdown } from "@/components/modules/notifications/NotificationDropdown";
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
@@ -38,17 +39,8 @@ export function Header() {
           <span className="hidden sm:inline">Pintar AI</span>
         </Link>
 
-        {/* Notification */}
-        <button
-          className={cn(
-            "p-2 rounded-lg text-zinc-600 dark:text-zinc-400",
-            "hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-            "transition-all duration-100 active:scale-[0.95]"
-          )}
-          aria-label="Notifikasi"
-        >
-          <Bell className="w-4 h-4" strokeWidth={1.75} />
-        </button>
+        {/* Dynamic Notification Bell & Alert Engine */}
+        <NotificationDropdown />
 
         {/* Theme toggle with hydration suppression */}
         <button

@@ -115,3 +115,12 @@ Status Legend:
 - [x] UI Komponen: `RecurringModal` (form tambah/edit jadwal), `RecurringCard` (status aktif/jeda, countdown jatuh tempo, tombol "Catat Sekarang"), `RecurringList` (ringkasan estimasi komitmen bulanan & banner pengingat tagihan jatuh tempo)
 - [x] Navigasi Transaksi Terintegrasi: `TransactionsViewTabs` di `src/app/(dashboard)/transactions/page.tsx` dengan indikator badge tagihan jatuh tempo
 - [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
+
+---
+
+## Phase 12: In-App Notifications & Financial Alerts Engine
+- [x] Database Schema: Tabel `notifications` (`user_id`, `type`, `title`, `message`, `link`, `is_read`, `created_at`) dengan composite index (`user_id`, `is_read`)
+- [x] Server Actions & Financial Alerts Engine: `getNotifications`, `markAsRead`, `markAllAsRead`, `checkAndGenerateFinancialAlerts` (`src/actions/notifications.ts`)
+- [x] Evaluator Peringatan Otomatis: Deteksi cerdas Budget Warning ($\ge 80\%$ & $\ge 100\%$), Tagihan Berulang Jatuh Tempo (H-1 & Hari H), dan Target Impian Tercapai 100% (dengan idempotency guardrails)
+- [x] UI Komponen: `NotificationDropdown` di Header global dengan badge count unread, ikon tematik per tipe notifikasi, aksi "Tandai Semua Dibaca", dan navigasi langsung ke halaman terkait
+- [x] Audit Typecheck (`npx tsc --noEmit`) & Linting (`npm run lint`) 100% Passed (0 errors, 0 warnings)
