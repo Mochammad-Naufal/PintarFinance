@@ -148,17 +148,17 @@ export function ReceiptScanModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 dark:bg-black/70 backdrop-blur-xs animate-in fade-in duration-150 overflow-y-auto"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg rounded-t-3xl sm:rounded-2xl bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain pb-8 sm:pb-6">
+      <div className="w-full max-w-lg rounded-t-3xl sm:rounded-2xl bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col max-h-[85dvh] sm:max-h-[90dvh] overflow-hidden">
         {/* Mobile grab handle */}
-        <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto sm:hidden -mt-1 mb-2 shrink-0" />
+        <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto sm:hidden mt-3 mb-1 shrink-0" />
 
-        {/* Header */}
-        <div className="flex items-center justify-between sticky top-0 bg-white dark:bg-zinc-900 z-10 pt-1 pb-1">
+        {/* Header (Pinned) */}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-zinc-100 dark:border-zinc-800/80 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <Camera className="w-4 h-4" />
@@ -181,22 +181,22 @@ export function ReceiptScanModal({
           </button>
         </div>
 
-        {error && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
-            {error}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
-            <CheckCircle2 className="w-4 h-4" />
-            {successMessage}
-          </div>
-        )}
-
         {/* Step 1: Upload Image Area */}
         {!parsedData && (
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 overscroll-contain">
+            {error && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+                {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-4 h-4" />
+                {successMessage}
+              </div>
+            )}
+
             <div
               className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-6 text-center hover:border-blue-500 transition-all cursor-pointer flex flex-col items-center justify-center relative bg-zinc-50/50 dark:bg-zinc-950/50"
               onClick={() => document.getElementById("receipt-file-input")?.click()}
@@ -238,170 +238,190 @@ export function ReceiptScanModal({
               )}
             </div>
 
-            <button
-              type="button"
-              disabled={!selectedFile || isScanning}
-              onClick={handleScan}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
-            >
-              {isScanning ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Mengekstrak Item & Total Struk...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Ekstrak Data Struk Sekarang
-                </>
-              )}
-            </button>
+            <div className="pt-2">
+              <button
+                type="button"
+                disabled={!selectedFile || isScanning}
+                onClick={handleScan}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
+              >
+                {isScanning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Mengekstrak Item & Total Struk...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Ekstrak Data Struk Sekarang
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
         {/* Step 2: Parsed Receipt Review Form */}
         {parsedData && (
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs">
-              <span className="text-blue-700 dark:text-blue-300 font-medium flex items-center gap-1.5">
-                <Receipt className="w-3.5 h-3.5" />
-                Struk Berhasil Dianalisis ({parsedData.items.length} item)
-              </span>
-              <button
-                type="button"
-                onClick={() => setParsedData(null)}
-                className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Ganti Foto
-              </button>
-            </div>
+          <form
+            onSubmit={handleSave}
+            className="flex flex-col flex-1 min-h-0 overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 overscroll-contain">
+              {error && (
+                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
+                  {error}
+                </div>
+              )}
 
-            {/* Merchant Name */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Nama Merchant / Toko
-              </label>
-              <input
-                type="text"
-                required
-                value={merchantName}
-                onChange={(e) => setMerchantName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
-              />
-            </div>
+              {successMessage && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4" />
+                  {successMessage}
+                </div>
+              )}
 
-            {/* Total Amount */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Total Tagihan Struk (IDR)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 font-mono">
-                  Rp
+              <div className="flex items-center justify-between p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs">
+                <span className="text-blue-700 dark:text-blue-300 font-medium flex items-center gap-1.5">
+                  <Receipt className="w-3.5 h-3.5" />
+                  Struk Berhasil Dianalisis ({parsedData.items.length} item)
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setParsedData(null)}
+                  className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Ganti Foto
+                </button>
+              </div>
+
+              {/* Merchant Name */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Nama Merchant / Toko
+                </label>
                 <input
-                  type="number"
-                  min="100"
+                  type="text"
                   required
-                  value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none focus:border-blue-500"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
                 />
               </div>
-              {Number(totalAmount) > 0 && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 font-mono">
-                  = {formatCurrency(Number(totalAmount))}
-                </p>
-              )}
-            </div>
 
-            {/* Wallet & Category */}
-            <div className="grid grid-cols-2 gap-3">
+              {/* Total Amount */}
               <div>
                 <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Kategori
+                  Total Tagihan Struk (IDR)
                 </label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
-                >
-                  {categories
-                    .filter((c) => c.type === "expense")
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-zinc-400 font-mono">
+                    Rp
+                  </span>
+                  <input
+                    type="number"
+                    min="100"
+                    required
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                {Number(totalAmount) > 0 && (
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 font-mono">
+                    = {formatCurrency(Number(totalAmount))}
+                  </p>
+                )}
+              </div>
+
+              {/* Wallet & Category */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Kategori
+                  </label>
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                  >
+                    {categories
+                      .filter((c) => c.type === "expense")
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Dibayar Dari
+                  </label>
+                  <select
+                    value={walletId}
+                    onChange={(e) => setWalletId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                  >
+                    {wallets.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
                       </option>
                     ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Dibayar Dari
-                </label>
-                <select
-                  value={walletId}
-                  onChange={(e) => setWalletId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
-                >
-                  {wallets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Itemized Table (if available) */}
-            {parsedData.items.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                  Daftar Rincian Barang
-                </p>
-                <div className="max-h-32 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/50 text-xs">
-                  {parsedData.items.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-2">
-                      <span className="truncate max-w-[220px] text-zinc-800 dark:text-zinc-200">
-                        {item.quantity ? `${item.quantity}x ` : ""}
-                        {item.name}
-                      </span>
-                      <span className="font-mono font-medium text-zinc-600 dark:text-zinc-400 tabular-nums">
-                        {formatCurrency(item.price)}
-                      </span>
-                    </div>
-                  ))}
+                  </select>
                 </div>
               </div>
-            )}
 
-            {/* Date */}
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Tanggal Transaksi
-              </label>
-              <input
-                type="datetime-local"
-                value={transactionDate}
-                onChange={(e) => setTransactionDate(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
-              />
+              {/* Itemized Table (if available) */}
+              {parsedData.items.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                    Daftar Rincian Barang
+                  </p>
+                  <div className="max-h-32 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/50 text-xs">
+                    {parsedData.items.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between p-2">
+                        <span className="truncate max-w-[220px] text-zinc-800 dark:text-zinc-200">
+                          {item.quantity ? `${item.quantity}x ` : ""}
+                          {item.name}
+                        </span>
+                        <span className="font-mono font-medium text-zinc-600 dark:text-zinc-400 tabular-nums">
+                          {formatCurrency(item.price)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Date */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                  Tanggal Transaksi
+                </label>
+                <input
+                  type="datetime-local"
+                  value={transactionDate}
+                  onChange={(e) => setTransactionDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-zinc-200 dark:border-zinc-800/60">
+            {/* Pinned Sticky Footer */}
+            <div className="flex items-center justify-end gap-2 px-5 sm:px-6 py-3.5 sm:py-4 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-900/90 backdrop-blur-xs shrink-0">
               <button
                 type="button"
                 onClick={() => setParsedData(null)}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.98] transition-all"
+                className="px-4 py-2.5 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.98] transition-all"
               >
                 Ulangi
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
               >
                 {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 Simpan Transaksi Struk
