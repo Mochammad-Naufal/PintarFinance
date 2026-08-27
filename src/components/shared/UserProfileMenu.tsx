@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { LogIn, LogOut, ShieldCheck, User as UserIcon } from "lucide-react";
+import {
+  LogIn,
+  LogOut,
+  ShieldCheck,
+  User as UserIcon,
+  UserCheck,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/actions/auth";
 
@@ -100,7 +106,7 @@ export function UserProfileMenu() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 pl-2 sm:pl-2.5 ml-1 border-l border-zinc-200 dark:border-zinc-800 text-left transition-all active:scale-[0.98]"
+        className="flex items-center gap-2 pl-2 sm:pl-2.5 ml-1 border-l border-zinc-200 dark:border-zinc-800 text-left transition-all active:scale-[0.98] cursor-pointer"
         aria-label="Menu Pengguna"
       >
         <div className="w-8 h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
@@ -135,6 +141,16 @@ export function UserProfileMenu() {
             </div>
           </div>
 
+          {/* Profil & Pengaturan Akun navigation link */}
+          <Link
+            href="/profile"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Profil & Pengaturan Akun</span>
+          </Link>
+
           {/* Links */}
           {user.isDemo ? (
             <>
@@ -162,7 +178,7 @@ export function UserProfileMenu() {
                 setIsOpen(false);
                 await signOut();
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Keluar Akun (Sign Out)</span>
