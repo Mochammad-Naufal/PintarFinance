@@ -17,16 +17,14 @@ export default function AuthLayout({
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-all flex items-center justify-center">
-              <Image
-                src="/logo.png"
-                alt="Pintar Finance"
-                width={40}
-                height={40}
-                priority
-                className="w-full h-full object-contain"
-              />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Pintar Finance"
+              width={40}
+              height={40}
+              priority
+              className="w-10 h-10 rounded-xl object-contain shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-all"
+            />
             <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-zinc-100">
               Pintar Finance
             </span>
