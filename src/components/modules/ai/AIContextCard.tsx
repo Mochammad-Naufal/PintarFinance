@@ -73,7 +73,7 @@ export function AIContextCard({
               <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>Pintar AI Advisor: {moduleName}</span>
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  {status === "success" && analysis?.usedModel ? (analysis.usedModel === "gemini-flash-lite-latest" ? "Gemini Flash Lite" : analysis.usedModel === "gemini-3.1-flash-lite" ? "Gemini 3.1" : analysis.usedModel === "gemini-flash-latest" ? "Gemini Flash" : analysis.usedModel) : "Gemini AI"}
+                  Pintar AI
                 </span>
               </h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
@@ -160,7 +160,7 @@ export function AIContextCard({
                 </span>
               )}
               <span className="text-[10px] text-zinc-400">
-                Analisis AI • {moduleName}
+                {analysis.usedModel === "gemini-flash-lite-latest" ? "Gemini Flash Lite" : analysis.usedModel === "gemini-3.1-flash-lite" ? "Gemini 3.1" : analysis.usedModel === "gemini-flash-latest" ? "Gemini Flash" : analysis.usedModel || "Pintar AI"} • {moduleName}
               </span>
             </div>
 
