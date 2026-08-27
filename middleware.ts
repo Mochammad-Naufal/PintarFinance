@@ -11,6 +11,16 @@ export async function middleware(request: NextRequest) {
   const { supabase, supabaseResponse } = createClient(request);
   const pathname = request.nextUrl.pathname;
 
+  // 1. Immediately bypass all static files, images, icons, and fonts
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/icons") ||
+    pathname.startsWith("/auth/callback") ||
+    pathname.includes(".") // Any static file with extension like logo.png, favicon.ico, etc.
+  ) {
+    return supabaseResponse;
+  }
+
   // Always call getUser() to refresh the session cookie
   const {
     data: { user },
@@ -21,14 +31,14 @@ export async function middleware(request: NextRequest) {
     pathname === route || pathname.startsWith(route + "/")
   );
 
-  // 1. If already logged in and visiting auth pages → redirect to /dashboard
+  // 2. If already logged in and visiting auth pages → redirect to /dashboard
   if (user && isAuthRedirectRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
-  // 2. If NOT logged in and visiting a protected route → redirect to /login
+  // 3. If NOT logged in and visiting a protected route → redirect to /login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -37,7 +47,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 3. Otherwise, pass through (with refreshed cookies)
+  // 4. Otherwise, pass through (with refreshed cookies)
   return supabaseResponse;
 }
 
@@ -50,6 +60,6 @@ export const config = {
      * - favicon.ico, manifest, icons, images, etc.
      * - Supabase auth callback route
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|manifest|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?)$|auth/callback).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest|icon|apple-icon|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|css|js|woff2?)$|auth/callback).*)",
   ],
 };
