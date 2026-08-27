@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { ProfileContent } from "./ProfileContent";
 import { getSavingsGoals } from "@/actions/savings";
 import { getWallets } from "@/actions/wallets";
@@ -16,6 +17,10 @@ export default async function ProfilePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect("/login");
+  }
+
   const [savingsGoals, wallets] = await Promise.all([
     getSavingsGoals(),
     getWallets(),
@@ -23,12 +28,11 @@ export default async function ProfilePage() {
 
   const profileData = {
     name:
-      user?.user_metadata?.full_name ||
-      user?.user_metadata?.name ||
-      user?.email?.split("@")[0] ||
-      "Demo User",
-    email: user?.email || "demo@pintarfinance.com",
-    isDemo: !user,
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "Pengguna",
+    email: user.email ?? "",
   };
 
   return (

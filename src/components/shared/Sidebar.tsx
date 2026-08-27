@@ -8,7 +8,6 @@ import {
   Calculator,
   CreditCard,
   GraduationCap,
-  LogIn,
   LogOut,
   type LucideIcon,
   PanelLeftClose,
@@ -46,10 +45,9 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const [user, setUser] = useState<{ name: string; email: string; isDemo: boolean }>({
-    name: "Demo User",
-    email: "demo@pintarfinance.com",
-    isDemo: true,
+  const [user, setUser] = useState<{ name: string; email: string }>({
+    name: "Pengguna",
+    email: "",
   });
 
   useEffect(() => {
@@ -59,14 +57,7 @@ export function Sidebar() {
       if (authUser) {
         setUser({
           name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split("@")[0] || "Pengguna",
-          email: authUser.email || "user@pintarfinance.com",
-          isDemo: false,
-        });
-      } else {
-        setUser({
-          name: "Demo User",
-          email: "demo@pintarfinance.com",
-          isDemo: true,
+          email: authUser.email || "",
         });
       }
     };
@@ -76,14 +67,7 @@ export function Sidebar() {
       if (session?.user) {
         setUser({
           name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Pengguna",
-          email: session.user.email || "user@pintarfinance.com",
-          isDemo: false,
-        });
-      } else {
-        setUser({
-          name: "Demo User",
-          email: "demo@pintarfinance.com",
-          isDemo: true,
+          email: session.user.email || "",
         });
       }
     });
@@ -208,49 +192,29 @@ export function Sidebar() {
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">{user.name}</p>
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{user.isDemo ? "Mode Demo" : "Free Plan"}</p>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">Free Plan</p>
               </div>
             </div>
 
-            {user.isDemo ? (
-              <Link
-                href="/login"
-                title="Masuk Akun Pribadi"
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 shrink-0"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => signOut()}
-                title="Keluar Akun"
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 shrink-0"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => signOut()}
+              title="Keluar Akun"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
           </div>
         ) : (
           <div className="flex justify-center">
-            {user.isDemo ? (
-              <Link
-                href="/login"
-                title={`${user.name} (Masuk Akun)`}
-                className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-transform"
-              >
-                {initial}
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => signOut()}
-                title={`${user.name} (Keluar)`}
-                className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-transform"
-              >
-                {initial}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => signOut()}
+              title={`${user.name} (Keluar)`}
+              className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-transform"
+            >
+              {initial}
+            </button>
           </div>
         )}
       </div>

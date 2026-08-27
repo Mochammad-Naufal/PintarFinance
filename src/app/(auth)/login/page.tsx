@@ -12,7 +12,6 @@ import {
   Lock,
   Mail,
   Send,
-  Sparkles,
 } from "lucide-react";
 import { resendConfirmationEmail, signInWithOtp, signInWithPassword } from "@/actions/auth";
 
@@ -82,10 +81,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoLogin = () => {
-    router.push("/dashboard");
-  };
-
   return (
     <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 shadow-xl backdrop-blur-xl space-y-6">
       {/* Title */}
@@ -132,13 +127,14 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* General Error or Email Unconfirmed Box */}
+      {/* General Error */}
       {error && !isEmailNotConfirmed && (
         <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
           {error}
         </div>
       )}
 
+      {/* Email Not Confirmed Warning */}
       {isEmailNotConfirmed && (
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-300 space-y-3 animate-in fade-in duration-200">
           <div className="flex items-start gap-2.5">
@@ -241,24 +237,6 @@ export default function LoginPage() {
           </button>
         </form>
       )}
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center">
-        <div className="border-t border-zinc-200 dark:border-zinc-800 w-full" />
-        <span className="bg-white dark:bg-zinc-900 px-3 text-[10px] uppercase font-semibold text-zinc-400 tracking-wider absolute">
-          atau
-        </span>
-      </div>
-
-      {/* Quick Demo Login Option */}
-      <button
-        type="button"
-        onClick={handleDemoLogin}
-        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium transition-all active:scale-[0.98]"
-      >
-        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-        <span>Jelajahi Sebagai Akun Demo</span>
-      </button>
 
       {/* Register Link */}
       <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">

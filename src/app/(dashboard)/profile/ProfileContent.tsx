@@ -9,7 +9,6 @@ import {
   FileText,
   KeyRound,
   Loader2,
-  LogIn,
   LogOut,
   Moon,
   PieChart,
@@ -17,7 +16,6 @@ import {
   ShieldCheck,
   Sparkles,
   Sun,
-  User as UserIcon,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -33,7 +31,6 @@ interface ProfileContentProps {
   user: {
     name: string;
     email: string;
-    isDemo: boolean;
   };
   savingsGoals: SavingsGoal[];
   wallets: Wallet[];
@@ -126,7 +123,7 @@ export function ProfileContent({
             </h2>
             <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full w-fit mx-auto sm:mx-0">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{user.isDemo ? "Mode Demo" : "Akun Terverifikasi"}</span>
+              <span>Akun Terverifikasi</span>
             </div>
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
@@ -455,34 +452,15 @@ export function ProfileContent({
         </div>
 
         <div className="p-3">
-          {user.isDemo ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Link
-                href="/login"
-                className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-xs sm:text-sm font-semibold text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-              >
-                <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Masuk Akun Pribadi</span>
-              </Link>
-              <Link
-                href="/register"
-                className="flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-emerald-600 text-white text-xs sm:text-sm font-semibold hover:bg-emerald-500 transition-colors shadow-xs"
-              >
-                <UserIcon className="w-4 h-4" />
-                <span>Daftar Akun Baru</span>
-              </Link>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold hover:bg-rose-500/20 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>{isSigningOut ? "Sedang Keluar..." : "Keluar Akun (Sign Out)"}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-semibold hover:bg-rose-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{isSigningOut ? "Sedang Keluar..." : "Keluar Akun (Sign Out)"}</span>
+          </button>
         </div>
       </div>
 

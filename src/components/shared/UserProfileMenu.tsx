@@ -3,10 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  LogIn,
   LogOut,
   ShieldCheck,
-  User as UserIcon,
   UserCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -15,14 +13,12 @@ import { signOut } from "@/actions/auth";
 interface UserProfile {
   name: string;
   email: string;
-  isDemo: boolean;
 }
 
 export function UserProfileMenu() {
   const [user, setUser] = useState<UserProfile>({
-    name: "Demo User",
-    email: "demo@pintarfinance.com",
-    isDemo: true,
+    name: "Pengguna",
+    email: "",
   });
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -42,14 +38,7 @@ export function UserProfileMenu() {
             authUser.user_metadata?.name ||
             authUser.email?.split("@")[0] ||
             "Pengguna",
-          email: authUser.email || "user@pintarfinance.com",
-          isDemo: false,
-        });
-      } else {
-        setUser({
-          name: "Demo User",
-          email: "demo@pintarfinance.com",
-          isDemo: true,
+          email: authUser.email || "",
         });
       }
     };
@@ -66,14 +55,7 @@ export function UserProfileMenu() {
             session.user.user_metadata?.name ||
             session.user.email?.split("@")[0] ||
             "Pengguna",
-          email: session.user.email || "user@pintarfinance.com",
-          isDemo: false,
-        });
-      } else {
-        setUser({
-          name: "Demo User",
-          email: "demo@pintarfinance.com",
-          isDemo: true,
+          email: session.user.email || "",
         });
       }
     });
@@ -119,7 +101,7 @@ export function UserProfileMenu() {
             {user.name}
           </p>
           <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-            {user.isDemo ? "Mode Demo" : "Free Plan"}
+            Free Plan
           </p>
         </div>
       </button>
@@ -137,53 +119,32 @@ export function UserProfileMenu() {
             </p>
             <div className="flex items-center gap-1.5 mt-2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md w-fit">
               <ShieldCheck className="w-3 h-3" />
-              <span>{user.isDemo ? "Sesi Demo Aktif" : "Akun Terverifikasi"}</span>
+              <span>Akun Terverifikasi</span>
             </div>
           </div>
 
-          {/* Profil & Pengaturan Akun navigation link */}
+          {/* Profile & Settings Link */}
           <Link
             href="/profile"
             onClick={() => setIsOpen(false)}
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Profil & Pengaturan Akun</span>
+            <span>Profil &amp; Pengaturan Akun</span>
           </Link>
 
-          {/* Links */}
-          {user.isDemo ? (
-            <>
-              <Link
-                href="/login"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <LogIn className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Masuk Akun Pribadi</span>
-              </Link>
-              <Link
-                href="/register"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <UserIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Daftar Akun Baru</span>
-              </Link>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={async () => {
-                setIsOpen(false);
-                await signOut();
-              }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Keluar Akun (Sign Out)</span>
-            </button>
-          )}
+          {/* Sign Out */}
+          <button
+            type="button"
+            onClick={async () => {
+              setIsOpen(false);
+              await signOut();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Keluar Akun (Sign Out)</span>
+          </button>
         </div>
       )}
     </div>

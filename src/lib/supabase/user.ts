@@ -1,55 +1,50 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { sql, DEMO_USER_ID } from "@/db";
+import { redirect } from "next/navigation";
+
+export const DEMO_USER_ID_LEGACY = "00000000-0000-0000-0000-000000000001";
 
 export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
-  isDemo: boolean;
+  isDemo: false;
 }
 
 const onboardedUserCache = new Set<string>();
 
+/**
+ * Returns the authenticated user from the current session.
+ * Throws a redirect to /login if no valid session is found.
+ */
 export async function getCurrentUser(): Promise<AuthenticatedUser> {
-  try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-    if (user && !error) {
-      const name =
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0] ||
-        "Pengguna";
-
-      // Ensure user record exists in public.users (cached per process)
-      if (!onboardedUserCache.has(user.id)) {
-        await ensureUserOnboarding(user.id, user.email ?? "user@pintarfinance.com", name);
-      }
-
-      return {
-        id: user.id,
-        email: user.email ?? "user@pintarfinance.com",
-        name,
-        isDemo: false,
-      };
-    }
-  } catch (err) {
-    // Fallback if session/cookie lookup fails
-    console.warn("Session lookup fallback to demo:", err);
+  if (!user || error) {
+    redirect("/login");
   }
 
-  // Fallback: Demo User
+  const name =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.email?.split("@")[0] ||
+    "Pengguna";
+
+  // Ensure user record exists in public.users (cached per process)
+  if (!onboardedUserCache.has(user.id)) {
+    await ensureUserOnboarding(user.id, user.email ?? "user@pintarfinance.com", name);
+  }
+
   return {
-    id: DEMO_USER_ID,
-    email: "demo@pintarfinance.com",
-    name: "Demo User",
-    isDemo: true,
+    id: user.id,
+    email: user.email ?? "user@pintarfinance.com",
+    name,
+    isDemo: false,
   };
 }
 
@@ -63,6 +58,9 @@ export async function ensureUserOnboarding(
   name: string
 ) {
   try {
+    // Import here to avoid circular dependencies
+    const { sql } = await import("@/db");
+
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name?.trim() || cleanEmail.split("@")[0] || "Pengguna";
 

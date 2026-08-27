@@ -24,5 +24,3 @@ export const sql =
 if (process.env.NODE_ENV !== "production") {
   globalForDb.sql = sql;
 }
-
-export const DEMO_USER_ID = "00000000-0000-0000-0000-000000000001";
