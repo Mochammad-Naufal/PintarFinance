@@ -196,8 +196,7 @@ export function BottomNav() {
 
       {/* ─── Main Bottom Navigation Bar ──────────────────────────────────── */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-200 dark:border-zinc-800/80 transition-colors duration-150"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 w-full bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 transition-colors duration-150 pb-[env(safe-area-inset-bottom,0px)]"
       >
         <div className="flex items-center justify-around px-1 h-16">
           {/* Left Menu Items: Home, Transaksi */}

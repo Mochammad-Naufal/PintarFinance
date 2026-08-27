@@ -29,7 +29,7 @@ export function DashboardLayoutContent({
         <Header />
 
         {/* Page content */}
-        <main className="flex-1 px-4 py-5 pb-28 sm:px-6 sm:py-6 sm:pb-8 overflow-y-auto">
+        <main className="flex-1 px-4 py-5 pb-28 sm:px-6 sm:py-6 sm:pb-8">
           <div className="max-w-7xl mx-auto w-full min-w-0">
             {children}
           </div>
