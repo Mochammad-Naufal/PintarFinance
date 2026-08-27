@@ -316,20 +316,20 @@ export function ProfileContent({
             onClick={() => setIsExportModalOpen(true)}
             className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left group cursor-pointer"
           >
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <FileText className="w-5 h-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                    Ekspor Dokumen Keuangan (PDF)
+                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                    Ekspor Dokumen PDF
                   </p>
-                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 uppercase">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 uppercase whitespace-nowrap shrink-0">
                     PDF Report
                   </span>
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
                   Unduh atau cetak laporan keuangan formal terformat rapi
                 </p>
               </div>
@@ -342,15 +342,15 @@ export function ProfileContent({
             href="/transactions"
             className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left group"
           >
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
               <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <Repeat className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                   Tagihan & Transaksi Berulang
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
                   Kelola komitmen langganan rutin dan siklus pembayaran
                 </p>
               </div>
@@ -363,15 +363,15 @@ export function ProfileContent({
             href="/budgets"
             className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left group"
           >
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
               <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                 <PieChart className="w-5 h-5" />
               </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                   Batas Anggaran Kategori
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
                   Atur pagu belanja bulanan agar tidak overbudget
                 </p>
               </div>
@@ -396,7 +396,7 @@ export function ProfileContent({
             onClick={toggle}
             className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left cursor-pointer"
           >
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
               <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shrink-0">
                 {theme === "light" ? (
                   <Moon className="w-5 h-5" />
@@ -404,16 +404,16 @@ export function ProfileContent({
                   <Sun className="w-5 h-5" />
                 )}
               </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                   Tema Tampilan
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
                   {theme === "light" ? "Beralih ke mode gelap (Dark)" : "Beralih ke mode terang (Light)"}
                 </p>
               </div>
             </div>
-            <div suppressHydrationWarning className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl">
+            <div suppressHydrationWarning className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl whitespace-nowrap shrink-0">
               {theme === "light" ? "Mode Terang" : "Mode Gelap"}
             </div>
           </button>
