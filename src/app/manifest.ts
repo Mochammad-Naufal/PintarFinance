@@ -5,10 +5,10 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Pintar Finance — Manajemen Keuangan Cerdas",
     short_name: "Pintar Finance",
     description: "Aplikasi manajemen keuangan pribadi yang cerdas untuk Gen Z Indonesia.",
-    start_url: "/dashboard",
+    start_url: "/",
     display: "standalone",
     background_color: "#09090b",
-    theme_color: "#10b981",
+    theme_color: "#09090b",
     orientation: "portrait",
     icons: [
       {

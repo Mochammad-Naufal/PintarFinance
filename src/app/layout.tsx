@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
+import { AppShell } from "@/components/shared/AppShell";
 import "./globals.css";
 
 // ─── Fonts: Plus Jakarta Sans (Fintech UI) & JetBrains Mono (Clear Numbers) ──
@@ -42,9 +43,10 @@ export const metadata: Metadata = {
   },
   description:
     "Aplikasi manajemen keuangan pribadi yang cerdas untuk Gen Z Indonesia.",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Pintar Finance",
   },
   applicationName: "Pintar Finance",
@@ -69,7 +71,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           "selection:bg-emerald-500 selection:text-white",
         ].join(" ")}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );
