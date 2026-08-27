@@ -53,6 +53,7 @@ export function SplashLoader({ ready = false }: SplashLoaderProps) {
               alt="Pintar Finance"
               width={80}
               height={80}
+              unoptimized
               priority
               className="w-full h-full object-contain"
             />

@@ -22,6 +22,7 @@ export default function AuthLayout({
               alt="Pintar Finance"
               width={40}
               height={40}
+              unoptimized
               priority
               className="w-10 h-10 rounded-xl object-contain shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-all"
             />

@@ -24,6 +24,7 @@ export function Header() {
             alt="Pintar Finance"
             width={32}
             height={32}
+            unoptimized
             priority
             className="w-8 h-8 rounded-xl object-contain shadow-xs"
           />
