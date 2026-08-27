@@ -33,6 +33,7 @@ export function AIChatDrawer() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [usedModel, setUsedModel] = useState<string>("Gemini AI");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -64,6 +65,17 @@ export function AIChatDrawer() {
           ...prev,
           { role: "assistant", content: res.data!.reply },
         ]);
+        if (res.data.usedModel) {
+          setUsedModel(
+            res.data.usedModel === "gemini-flash-lite-latest"
+              ? "Gemini Flash Lite"
+              : res.data.usedModel === "gemini-3.1-flash-lite"
+              ? "Gemini 3.1"
+              : res.data.usedModel === "gemini-flash-latest"
+              ? "Gemini Flash"
+              : res.data.usedModel
+          );
+        }
       } else {
         setMessages((prev) => [
           ...prev,
@@ -137,7 +149,7 @@ export function AIChatDrawer() {
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                   </h3>
                   <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
-                    Financial Planner • Gemini 1.5 Flash
+                    Financial Planner • {usedModel}
                   </p>
                 </div>
               </div>

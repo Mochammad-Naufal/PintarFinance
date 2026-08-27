@@ -212,7 +212,7 @@ Silakan ajukan pertanyaan seputar strategi investasi, cara menghitung kebutuhan 
 export async function sendFinancialChatMessage(
   messages: ChatMessage[],
   activeContext?: string
-): Promise<ActionResult<{ reply: string }>> {
+): Promise<ActionResult<{ reply: string; usedModel?: string }>> {
   try {
     const user = await getCurrentUser();
     const period = await getCurrentPeriod();
@@ -413,7 +413,7 @@ ${activeContext ? `- Konteks Modul: ${activeContext}` : ""}`;
             if (replyText && replyText.trim().length > 0) {
               return {
                 success: true,
-                data: { reply: replyText.trim() },
+                data: { reply: replyText.trim(), usedModel: modelName },
               };
             }
           }

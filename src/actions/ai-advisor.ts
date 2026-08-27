@@ -12,6 +12,7 @@ export interface AIAnalysisResponse {
   summary: string;
   keyInsights: string[];
   actionableRecommendations: string[];
+  usedModel?: string;
 }
 
 export type AIModuleType =
@@ -470,6 +471,7 @@ KEMBALIKAN HANYA OBJEK JSON MURNI SESUAI SCHEMA BERIKUT (TANPA MARKDOWN DAN TANP
                     summary: parsed.summary,
                     keyInsights: Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [],
                     actionableRecommendations: Array.isArray(parsed.actionableRecommendations) ? parsed.actionableRecommendations : [],
+                    usedModel: modelName,
                   },
                 };
               }
