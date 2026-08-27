@@ -63,15 +63,51 @@ export async function ensureUserOnboarding(
   name: string
 ) {
   try {
-    // 1. Insert or update user record
-    await sql`
-      INSERT INTO users (id, email, name)
-      VALUES (${userId}, ${email}, ${name})
-      ON CONFLICT (id) DO UPDATE SET
-        email = EXCLUDED.email,
-        name = COALESCE(EXCLUDED.name, users.name),
-        updated_at = now()
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name?.trim() || cleanEmail.split("@")[0] || "Pengguna";
+
+    // 1. Check if record exists by ID or by email
+    const [existingById] = await sql`
+      SELECT id, email, name FROM users WHERE id = ${userId} LIMIT 1
     `;
+    const [existingByEmail] = await sql`
+      SELECT id, email, name FROM users WHERE LOWER(email) = ${cleanEmail} LIMIT 1
+    `;
+
+    if (existingById) {
+      // Record exists with matching ID -> update email and name
+      await sql`
+        UPDATE users
+        SET
+          email = ${cleanEmail},
+          name = COALESCE(${cleanName}, name),
+          updated_at = now()
+        WHERE id = ${userId}
+      `;
+    } else if (existingByEmail) {
+      // Email is already in users table with a different ID (e.g. re-created Supabase Auth account)
+      // Update its ID to new auth UUID (cascades to all foreign keys)
+      await sql`
+        UPDATE users
+        SET
+          id = ${userId},
+          name = COALESCE(${cleanName}, name),
+          updated_at = now()
+        WHERE id = ${existingByEmail.id}
+      `;
+    } else {
+      // Fresh new user insertion
+      await sql`
+        INSERT INTO users (id, email, name)
+        VALUES (${userId}, ${cleanEmail}, ${cleanName})
+        ON CONFLICT (id) DO UPDATE SET
+          email = EXCLUDED.email,
+          name = COALESCE(EXCLUDED.name, users.name),
+          updated_at = now()
+      `;
+    }
+
+    onboardedUserCache.add(userId);
 
     // 2. Check if user already has wallets
     const [walletCount] = await sql`
