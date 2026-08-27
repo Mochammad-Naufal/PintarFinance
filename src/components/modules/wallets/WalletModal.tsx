@@ -39,14 +39,37 @@ interface WalletFormProps {
   onSave: (data: WalletInput) => Promise<ActionResult<Wallet>>;
 }
 
+function formatNumberWithDots(val: number | string): string {
+  const clean = String(val).replace(/\D/g, "");
+  if (!clean) return "";
+  return Number(clean).toLocaleString("id-ID");
+}
+
+function parseNumberFromDots(val: string): number {
+  const clean = val.replace(/\D/g, "");
+  return clean ? Number(clean) : 0;
+}
+
 function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
   const [name, setName] = useState(initialData?.name ?? "");
   const [type, setType] = useState<WalletType>(initialData?.type ?? "bank");
-  const [balance, setBalance] = useState(initialData ? String(initialData.balance) : "0");
+  const [balance, setBalance] = useState(
+    initialData ? formatNumberWithDots(initialData.balance) : ""
+  );
   const [color, setColor] = useState(initialData?.color ?? "#0060af");
   const [icon, setIcon] = useState(initialData?.icon ?? "landmark");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    if (!raw) {
+      setBalance("");
+      return;
+    }
+    const formatted = Number(raw).toLocaleString("id-ID");
+    setBalance(formatted);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +80,7 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
       const res = await onSave({
         name,
         type,
-        balance: Number(balance) || 0,
+        balance: parseNumberFromDots(balance),
         color,
         icon,
       });
@@ -128,14 +151,19 @@ function WalletForm({ initialData, onClose, onSave }: WalletFormProps) {
           <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
             Saldo Saat Ini (IDR)
           </label>
-          <input
-            type="number"
-            min="0"
-            required
-            value={balance}
-            onChange={(e) => setBalance(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-400 dark:text-zinc-500 font-semibold text-xs sm:text-sm font-mono">
+              Rp
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={balance}
+              onChange={handleBalanceChange}
+              className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
         </div>
 
         {/* Color Presets */}
