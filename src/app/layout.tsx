@@ -44,6 +44,15 @@ export const metadata: Metadata = {
   description:
     "Aplikasi manajemen keuangan pribadi yang cerdas untuk Gen Z Indonesia.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+    ],
+    shortcut: "/logo.png",
+    apple: [
+      { url: "/logo.png", type: "image/png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

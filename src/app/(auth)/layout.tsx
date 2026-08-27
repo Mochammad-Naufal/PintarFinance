@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3 } from "lucide-react";
+import Image from "next/image";
 
 export default function AuthLayout({
   children,
@@ -16,11 +16,18 @@ export default function AuthLayout({
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-all">
-              <BarChart3 className="w-5 h-5" strokeWidth={2} />
+          <Link href="/" className="inline-flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-all flex items-center justify-center">
+              <Image
+                src="/logo.png"
+                alt="Pintar Finance"
+                width={40}
+                height={40}
+                priority
+                className="w-full h-full object-contain"
+              />
             </div>
-            <span className="font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-100">
+            <span className="font-bold text-xl tracking-tight text-zinc-900 dark:text-zinc-100">
               Pintar Finance
             </span>
           </Link>
@@ -31,7 +38,7 @@ export default function AuthLayout({
 
         {/* Footer Note */}
         <p className="text-center text-[11px] text-zinc-400 dark:text-zinc-600">
-          Dilindungi oleh enkripsi modern dan Supabase Auth & RLS.
+          Dilindungi oleh enkripsi modern dan Supabase Auth &amp; RLS.
         </p>
       </div>
     </div>

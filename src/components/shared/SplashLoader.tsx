@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface SplashLoaderProps {
   /** Set to true once Supabase auth session or initial loading is ready */
@@ -46,20 +47,15 @@ export function SplashLoader({ ready = false }: SplashLoaderProps) {
         {/* Animated Brand Icon with Bounce & Pulse Glow */}
         <div className="relative flex items-center justify-center">
           <div className="absolute -inset-2 rounded-3xl bg-linear-to-tr from-emerald-500/30 to-teal-500/20 blur-lg animate-pulse" />
-          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-linear-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-emerald-500/30 border border-emerald-400/30 animate-bounce">
-            <svg
-              className="w-9 h-9 sm:w-10 sm:h-10 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-zinc-900/90 flex items-center justify-center shadow-2xl shadow-emerald-500/30 border border-emerald-500/30 p-3 animate-bounce overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="Pintar Finance"
+              width={80}
+              height={80}
+              priority
+              className="w-full h-full object-contain"
+            />
           </div>
         </div>
 

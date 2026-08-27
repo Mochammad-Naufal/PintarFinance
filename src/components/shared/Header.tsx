@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Moon, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import { cn, formatDate } from "@/lib/utils";
@@ -15,17 +16,29 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between px-4 sm:px-6 h-16 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800/80 transition-colors duration-150">
-      {/* Left: Greeting + date */}
-      <div className="flex flex-col justify-center min-w-0 pr-2">
-        <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-none truncate">
-          Selamat Datang 👋
-        </h1>
-        <p
-          suppressHydrationWarning
-          className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize truncate"
-        >
-          {today}
-        </p>
+      {/* Left: Brand logo (mobile) + Greeting & date */}
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+        <Link href="/dashboard" className="lg:hidden shrink-0 flex items-center" aria-label="Dashboard">
+          <Image
+            src="/logo.png"
+            alt="Pintar Finance"
+            width={32}
+            height={32}
+            priority
+            className="w-8 h-8 rounded-xl object-contain shadow-xs"
+          />
+        </Link>
+        <div className="flex flex-col justify-center min-w-0">
+          <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-none truncate">
+            Selamat Datang 👋
+          </h1>
+          <p
+            suppressHydrationWarning
+            className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 hidden sm:block capitalize truncate"
+          >
+            {today}
+          </p>
+        </div>
       </div>
 
       {/* Right: Actions row */}

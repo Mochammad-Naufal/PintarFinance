@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -95,8 +96,15 @@ export function Sidebar() {
             isCollapsed ? "justify-center w-full" : ""
           )}
         >
-          <div className="w-8 h-8 rounded-xl bg-emerald-500 flex items-center justify-center shadow-xs shrink-0">
-            <BarChart3 className="w-4 h-4 text-white" strokeWidth={2} />
+          <div className="w-8 h-8 rounded-xl overflow-hidden shrink-0 flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="Pintar Finance"
+              width={32}
+              height={32}
+              priority
+              className="w-full h-full object-contain"
+            />
           </div>
           {!isCollapsed && (
             <span className="font-bold text-sm tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
