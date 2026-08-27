@@ -247,7 +247,7 @@ export function AIChatDrawer() {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2 shrink-0"
+              className="px-3.5 pt-3 pb-[calc(1.75rem+env(safe-area-inset-bottom,0px))] sm:p-3 sm:pb-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2 shrink-0"
             >
               <input
                 type="text"
@@ -255,12 +255,12 @@ export function AIChatDrawer() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isLoading}
-                className="flex-1 px-3.5 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500"
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-all active:scale-95 shrink-0 shadow-xs"
+                className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-all active:scale-95 shrink-0 shadow-xs cursor-pointer"
                 title="Kirim Pesan"
               >
                 <Send className="w-4 h-4" />
