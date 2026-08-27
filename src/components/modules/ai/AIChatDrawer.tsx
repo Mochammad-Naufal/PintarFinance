@@ -128,12 +128,12 @@ export function AIChatDrawer() {
       {/* ─── Chat Drawer / Modal ───────────────────────────────────────────── */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-end sm:justify-end p-0 sm:p-6 bg-black/40 sm:bg-transparent backdrop-blur-2xs sm:backdrop-blur-none pointer-events-auto"
+          className="fixed inset-0 z-60 flex items-end sm:items-end sm:justify-end p-0 sm:p-6 bg-black/50 sm:bg-transparent backdrop-blur-xs sm:backdrop-blur-none pointer-events-auto"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsOpen(false);
           }}
         >
-          <div className="w-full sm:w-[420px] h-[85dvh] sm:h-[600px] max-h-[92dvh] rounded-t-3xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+          <div className="w-full sm:w-[420px] h-[86dvh] sm:h-[600px] max-h-[90dvh] sm:max-h-[600px] rounded-t-3xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
             {/* Mobile Grab Handle */}
             <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto sm:hidden mt-2.5 mb-1 shrink-0" />
 
@@ -247,7 +247,7 @@ export function AIChatDrawer() {
                 e.preventDefault();
                 handleSendMessage();
               }}
-              className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2 shrink-0"
+              className="p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2 shrink-0"
             >
               <input
                 type="text"
