@@ -1,10 +1,8 @@
 import postgres from "postgres";
 
-const DATABASE_URL = process.env.DATABASE_URL;
-
-if (!DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set in environment variables.");
-}
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  "postgres://postgres:postgres@localhost:5432/postgres";
 
 // Global connection pool to prevent connection exhaustion in Next.js dev server
 const globalForDb = globalThis as unknown as {
@@ -14,7 +12,7 @@ const globalForDb = globalThis as unknown as {
 export const sql =
   globalForDb.sql ??
   postgres(DATABASE_URL, {
-    ssl: "require",
+    ssl: process.env.DATABASE_URL ? "require" : false,
     max: 20,
     idle_timeout: 20,
     connect_timeout: 10,
