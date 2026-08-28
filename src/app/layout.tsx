@@ -46,11 +46,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.png", type: "image/png", sizes: "any" },
     ],
-    shortcut: "/logo.png",
+    shortcut: { url: "/logo.png", type: "image/png" },
     apple: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.png", type: "image/png", sizes: "any" },
     ],
   },
   appleWebApp: {

@@ -29,7 +29,10 @@ export default function LoginPage() {
   const isEmailNotConfirmed =
     error &&
     (error.toLowerCase().includes("belum dikonfirmasi") ||
-      error.toLowerCase().includes("email not confirmed"));
+      error.toLowerCase().includes("belum diverifikasi") ||
+      error.toLowerCase().includes("email not confirmed") ||
+      error.toLowerCase().includes("email_not_confirmed") ||
+      error.toLowerCase().includes("not confirmed"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,9 +143,9 @@ export default function LoginPage() {
           <div className="flex items-start gap-2.5">
             <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
             <div className="text-xs space-y-1">
-              <p className="font-semibold">Email Belum Dikonfirmasi</p>
+              <p className="font-semibold">Email Belum Diverifikasi</p>
               <p className="text-amber-800 dark:text-amber-400 text-[11px] leading-relaxed">
-                Supabase memerlukan verifikasi email untuk akun baru. Silakan periksa kotak masuk atau folder spam di email Anda (<strong>{email}</strong>) dan klik tautan konfirmasi.
+                Email Anda belum diverifikasi. Silakan cek folder inbox atau spam email Anda (<strong>{email}</strong>) dan klik tautan konfirmasi yang telah dikirimkan.
               </p>
             </div>
           </div>

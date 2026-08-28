@@ -206,6 +206,7 @@ export function BottomNav() {
               <Link
                 key={href}
                 href={href}
+                prefetch={true}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 min-w-[56px] h-full",
                   "transition-all duration-100 active:scale-[0.90]",
@@ -249,6 +250,7 @@ export function BottomNav() {
               <Link
                 key={href}
                 href={href}
+                prefetch={true}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 min-w-[56px] h-full",
                   "transition-all duration-100 active:scale-[0.90]",
