@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/middleware";
 
 // Routes that DON'T require authentication
-const PUBLIC_ROUTES = ["/login", "/register"];
+const PUBLIC_ROUTES = ["/login", "/register", "/offline"];
 
 // Routes that should redirect to /dashboard if already logged in
 const AUTH_REDIRECT_ROUTES = ["/login", "/register", "/"];

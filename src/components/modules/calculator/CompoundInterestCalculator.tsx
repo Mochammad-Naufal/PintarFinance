@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   ArrowRight,
   Calculator,
   ChevronDown,
@@ -129,6 +130,21 @@ export function CompoundInterestCalculator() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+      {/* Back Navigation Bar */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/savings"
+          prefetch={true}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all shadow-xs group"
+        >
+          <ArrowLeft className="w-4 h-4 text-zinc-500 dark:text-zinc-400 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Kembali ke Pos Tabungan</span>
+        </Link>
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium hidden sm:inline">
+          Simulasi Pertumbuhan Aset &amp; Investasi
+        </span>
+      </div>
+
       {/* Header Banner */}
       <div className="p-6 sm:p-8 rounded-3xl bg-linear-to-br from-emerald-600 to-teal-700 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-10 -translate-y-10 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
