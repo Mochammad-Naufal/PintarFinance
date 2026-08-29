@@ -93,7 +93,7 @@ export function DashboardView({
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* ── Baris 1: Hero Net Worth Banner ──────────────────────────────── */}
-      <NetWorthBanner analytics={analytics} />
+      <NetWorthBanner analytics={analytics} wallets={wallets} />
 
       {/* ── AI Contextual Advisor ────────────────────────────────────────── */}
       <AIContextCard moduleType="dashboard" moduleName="Dashboard Finansial" />
