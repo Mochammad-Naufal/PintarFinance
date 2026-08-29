@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import {
   type ActionResult,
@@ -43,8 +43,25 @@ function TransactionForm({
   const [destinationWalletId, setDestinationWalletId] = useState(
     wallets[1]?.id ?? wallets[0]?.id ?? ""
   );
+
+  // Filter and deduplicate categories based on selected transaction type
+  const availableCategories = useMemo(() => {
+    const filtered = categories.filter((c) => c.type === type);
+    const seen = new Set<string>();
+    const result: Category[] = [];
+    for (const c of filtered) {
+      const key = `${c.type}-${c.name.trim().toLowerCase()}`;
+      if (!seen.has(key) && !seen.has(c.id)) {
+        seen.add(key);
+        seen.add(c.id);
+        result.push(c);
+      }
+    }
+    return result;
+  }, [categories, type]);
+
   const [categoryId, setCategoryId] = useState(
-    categories.find((c) => c.type === "expense")?.id ?? ""
+    () => categories.find((c) => c.type === "expense")?.id ?? ""
   );
   const [savingsGoalId, setSavingsGoalId] = useState(savingsGoals[0]?.id ?? "");
   const [adminFee, setAdminFee] = useState("0");
@@ -58,8 +75,15 @@ function TransactionForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter categories based on selected transaction type
-  const availableCategories = categories.filter((c) => c.type === type);
+  // Keep categoryId in sync with availableCategories
+  useEffect(() => {
+    if (type === "expense" || type === "income") {
+      const exists = availableCategories.some((c) => c.id === categoryId);
+      if (!exists && availableCategories.length > 0) {
+        setCategoryId(availableCategories[0].id);
+      }
+    }
+  }, [type, availableCategories, categoryId]);
 
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);

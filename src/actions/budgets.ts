@@ -169,6 +169,7 @@ export async function upsertBudget(
       budgetId = inserted.id as string;
     }
 
+    revalidatePath("/transactions");
     revalidatePath("/budgets");
     revalidatePath("/dashboard");
 
@@ -208,6 +209,7 @@ export async function deleteBudget(id: string): Promise<ActionResult> {
       };
     }
 
+    revalidatePath("/transactions");
     revalidatePath("/budgets");
     revalidatePath("/dashboard");
 

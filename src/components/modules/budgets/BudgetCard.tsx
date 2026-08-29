@@ -69,12 +69,12 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           </div>
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                 {budget.category_name}
               </h3>
               <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusBadge.className}`}
+                className={`inline-flex items-center px-2.5 py-0.5 w-fit rounded-full text-xs font-semibold ${statusBadge.className}`}
               >
                 {statusBadge.label}
               </span>

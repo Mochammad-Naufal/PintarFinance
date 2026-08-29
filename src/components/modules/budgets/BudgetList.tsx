@@ -54,7 +54,7 @@ export function BudgetList({
   const isCurrentMonth = currentPeriod === nowPeriod;
 
   const handlePeriodChange = (newPeriod: string) => {
-    router.push(`/budgets?period=${newPeriod}`);
+    router.push(`/transactions?tab=budget&period=${newPeriod}`);
   };
 
   const handleOpenAdd = () => {

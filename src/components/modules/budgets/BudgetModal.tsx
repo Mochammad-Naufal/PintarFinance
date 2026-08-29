@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import {
   type ActionResult,
@@ -47,7 +47,20 @@ function BudgetForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const expenseCategories = categories.filter((c) => c.type === "expense");
+  const expenseCategories = useMemo<Category[]>(() => {
+    const filtered = categories.filter((c: Category) => c.type === "expense");
+    const seen = new Set<string>();
+    const result: Category[] = [];
+    for (const c of filtered) {
+      const key = `${c.type}-${c.name.trim().toLowerCase()}`;
+      if (!seen.has(key) && !seen.has(c.id)) {
+        seen.add(key);
+        seen.add(c.id);
+        result.push(c);
+      }
+    }
+    return result;
+  }, [categories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

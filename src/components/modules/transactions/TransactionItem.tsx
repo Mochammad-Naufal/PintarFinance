@@ -75,7 +75,7 @@ export function TransactionItem({
             {title}
           </p>
 
-          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400 flex-wrap">
+          <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-500 dark:text-zinc-400 flex-wrap">
             {transaction.type === "transfer" ? (
               <span className="font-medium text-purple-600 dark:text-purple-400">
                 {transaction.wallet_name} → {transaction.destination_wallet_name}
@@ -91,7 +91,9 @@ export function TransactionItem({
             {transaction.category_name && transaction.type !== "transfer" && transaction.type !== "saving" && (
               <>
                 <span>•</span>
-                <span className="truncate">{transaction.category_name}</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 w-fit rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                  {transaction.category_name}
+                </span>
               </>
             )}
 
@@ -105,7 +107,7 @@ export function TransactionItem({
       <div className="flex items-center gap-3 shrink-0 ml-3">
         <div className="text-right">
           <p
-            className={`text-sm font-bold font-mono tabular-nums ${
+            className={`text-sm sm:text-base font-bold font-mono tabular-nums ${
               transaction.type === "income"
                 ? "text-emerald-600 dark:text-emerald-400"
                 : transaction.type === "saving"
@@ -125,7 +127,7 @@ export function TransactionItem({
           </p>
 
           {transaction.admin_fee > 0 && (
-            <p className="text-[10px] text-zinc-400 font-mono">
+            <p className="text-xs text-zinc-400 font-mono">
               + Admin {formatCurrency(transaction.admin_fee)}
             </p>
           )}

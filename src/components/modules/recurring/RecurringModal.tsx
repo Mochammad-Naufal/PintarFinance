@@ -1,7 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar, CheckCircle2, Clock, Loader2, Repeat, Tag, Wallet as WalletIcon, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Repeat,
+  Tag,
+  Wallet as WalletIcon,
+  X,
+} from "lucide-react";
 import {
   type ActionResult,
   type Category,
@@ -60,7 +69,20 @@ function RecurringModalForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const filteredCategories = categories.filter((c) => c.type === type);
+  const filteredCategories = useMemo<Category[]>(() => {
+    const filtered = categories.filter((c: Category) => c.type === type);
+    const seen = new Set<string>();
+    const result: Category[] = [];
+    for (const c of filtered) {
+      const key = `${c.type}-${c.name.trim().toLowerCase()}`;
+      if (!seen.has(key) && !seen.has(c.id)) {
+        seen.add(key);
+        seen.add(c.id);
+        result.push(c);
+      }
+    }
+    return result;
+  }, [categories, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,7 +294,7 @@ function RecurringModalForm({
               className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
             >
               <option value="">Tanpa Kategori</option>
-              {filteredCategories.map((c) => (
+              {filteredCategories.map((c: Category) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
@@ -352,7 +374,7 @@ export function RecurringModal(props: RecurringModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) props.onClose();
       }}

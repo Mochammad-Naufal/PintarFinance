@@ -357,7 +357,7 @@ export function ProfileContent({
 
           {/* Quick link: Budget Limits */}
           <Link
-            href="/budgets"
+            href="/transactions?tab=budget"
             className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left group"
           >
             <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">

@@ -155,14 +155,14 @@ export function RecurringCard({
         </div>
 
         {/* Frequency & Auto-debit Pill */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
           {item.auto_create && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-              <Zap className="w-2.5 h-2.5" />
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 w-fit rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Zap className="w-3 h-3" />
               <span>Auto</span>
             </span>
           )}
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+          <span className="inline-flex items-center px-2.5 py-0.5 w-fit rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
             {FREQUENCY_LABELS[item.frequency] || item.frequency}
           </span>
         </div>
@@ -171,11 +171,11 @@ export function RecurringCard({
       {/* Amount & Due Date Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 pb-3 border-t border-zinc-100 dark:border-zinc-800/80">
         <div>
-          <span className="text-[10px] uppercase font-semibold text-zinc-400">
+          <span className="text-xs uppercase font-semibold text-zinc-400">
             Nominal Per Siklus
           </span>
           <p
-            className={`text-base font-mono font-bold tabular-nums ${
+            className={`text-lg sm:text-xl font-mono font-bold tabular-nums ${
               isExpense
                 ? "text-zinc-900 dark:text-zinc-100"
                 : "text-emerald-600 dark:text-emerald-400"
@@ -186,16 +186,16 @@ export function RecurringCard({
         </div>
 
         <div className="text-left sm:text-right">
-          <span className="text-[10px] uppercase font-semibold text-zinc-400 flex items-center sm:justify-end gap-1">
-            <Calendar className="w-3 h-3" />
+          <span className="text-xs uppercase font-semibold text-zinc-400 flex items-center sm:justify-end gap-1">
+            <Calendar className="w-3.5 h-3.5" />
             <span>Jatuh Tempo Berikutnya</span>
           </span>
-          <div className="flex items-center sm:justify-end gap-1.5 mt-0.5">
+          <div className="flex items-center sm:justify-end gap-1.5 mt-0.5 flex-wrap">
             <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
               {formatDate(item.next_run_date, "d MMM yyyy")}
             </span>
             <span
-              className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+              className={`inline-flex items-center px-2.5 py-0.5 w-fit rounded-full text-xs font-semibold ${
                 dueStatus.tone === "overdue"
                   ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
                   : dueStatus.tone === "today"
