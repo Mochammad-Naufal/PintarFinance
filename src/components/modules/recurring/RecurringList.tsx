@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -24,6 +24,11 @@ import {
   updateRecurringTransaction,
 } from "@/actions/recurring";
 import { formatCurrency } from "@/lib/utils";
+import {
+  addOfflineMutation,
+  getOfflineData,
+  saveOfflineData,
+} from "@/lib/offline/db";
 
 interface RecurringListProps {
   initialRecurring: RecurringTransaction[];
@@ -40,6 +45,30 @@ export function RecurringList({
   const [filterType, setFilterType] = useState<"all" | "expense" | "income">("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RecurringTransaction | null>(null);
+
+  // Cache initial server data or fallback to offline cached data (SWR)
+  useEffect(() => {
+    if (initialRecurring && initialRecurring.length > 0) {
+      void saveOfflineData("recurring", initialRecurring);
+      setRecurringList(initialRecurring);
+    } else {
+      void getOfflineData<RecurringTransaction[]>("recurring").then((cached) => {
+        if (cached && cached.length > 0) {
+          setRecurringList(cached);
+        }
+      });
+    }
+
+    const handleDataUpdated = async () => {
+      const cached = await getOfflineData<RecurringTransaction[]>("recurring");
+      if (cached && cached.length > 0) {
+        setRecurringList(cached);
+      }
+    };
+
+    window.addEventListener("pf:data-updated", handleDataUpdated);
+    return () => window.removeEventListener("pf:data-updated", handleDataUpdated);
+  }, [initialRecurring]);
 
   // Compute monthly normalized amounts
   const { totalMonthlyExpense, totalMonthlyIncome, activeCount, dueCount } = useMemo(() => {
@@ -90,30 +119,104 @@ export function RecurringList({
   }, [recurringList, filterType]);
 
   const handleSave = async (data: RecurringInput, id?: string) => {
+    const w = wallets.find((w) => w.id === data.wallet_id);
+    const c = categories.find((cat) => cat.id === data.category_id);
+
     if (id) {
-      const res = await updateRecurringTransaction(id, data);
-      if (res.success && res.data) {
-        const w = wallets.find((w) => w.id === res.data!.wallet_id);
-        const c = categories.find((cat) => cat.id === res.data!.category_id);
-        const enriched: RecurringTransaction = {
-          ...res.data,
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const updatedItem: RecurringTransaction = {
+          ...(editingItem || recurringList.find((r) => r.id === id)!),
+          ...data,
           wallet_name: w?.name,
           wallet_color: w?.color,
           wallet_icon: w?.icon,
           category_name: c?.name,
           category_icon: c?.icon,
           category_color: c?.color,
+          updated_at: new Date().toISOString(),
         };
-        setRecurringList((prev) => prev.map((item) => (item.id === id ? enriched : item)));
+
+        await addOfflineMutation({
+          entity: "recurring",
+          action: "update",
+          payload: { id, data },
+        });
+
+        setRecurringList((prev) => {
+          const next = prev.map((item) => (item.id === id ? updatedItem : item));
+          void saveOfflineData("recurring", next);
+          return next;
+        });
+
+        return { success: true, data: updatedItem };
       }
-      return res;
+
+      try {
+        const res = await updateRecurringTransaction(id, data);
+        if (res.success && res.data) {
+          const enriched: RecurringTransaction = {
+            ...res.data,
+            wallet_name: w?.name,
+            wallet_color: w?.color,
+            wallet_icon: w?.icon,
+            category_name: c?.name,
+            category_icon: c?.icon,
+            category_color: c?.color,
+          };
+          setRecurringList((prev) => {
+            const next = prev.map((item) => (item.id === id ? enriched : item));
+            void saveOfflineData("recurring", next);
+            return next;
+          });
+        }
+        return res;
+      } catch {
+        const updatedItem: RecurringTransaction = {
+          ...(editingItem || recurringList.find((r) => r.id === id)!),
+          ...data,
+          wallet_name: w?.name,
+          wallet_color: w?.color,
+          wallet_icon: w?.icon,
+          category_name: c?.name,
+          category_icon: c?.icon,
+          category_color: c?.color,
+          updated_at: new Date().toISOString(),
+        };
+
+        await addOfflineMutation({
+          entity: "recurring",
+          action: "update",
+          payload: { id, data },
+        });
+
+        setRecurringList((prev) => {
+          const next = prev.map((item) => (item.id === id ? updatedItem : item));
+          void saveOfflineData("recurring", next);
+          return next;
+        });
+
+        return { success: true, data: updatedItem };
+      }
     } else {
-      const res = await createRecurringTransaction(data);
-      if (res.success && res.data) {
-        const w = wallets.find((w) => w.id === res.data!.wallet_id);
-        const c = categories.find((cat) => cat.id === res.data!.category_id);
-        const enriched: RecurringTransaction = {
-          ...res.data,
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const newItem: RecurringTransaction = {
+          id: `offline_rec_${Date.now()}`,
+          user_id: "local_user",
+          wallet_id: data.wallet_id,
+          category_id: data.category_id ?? null,
+          description: data.description,
+          type: data.type,
+          amount: data.amount,
+          frequency: data.frequency,
+          start_date: data.start_date,
+          next_run_date: data.start_date,
+          last_run_date: null,
+          auto_create: data.auto_create ?? false,
+          is_active: data.is_active ?? true,
+          is_synced: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
           wallet_name: w?.name,
           wallet_color: w?.color,
           wallet_icon: w?.icon,
@@ -121,18 +224,122 @@ export function RecurringList({
           category_icon: c?.icon,
           category_color: c?.color,
         };
-        setRecurringList((prev) => [enriched, ...prev]);
+
+        await addOfflineMutation({
+          entity: "recurring",
+          action: "create",
+          payload: data,
+        });
+
+        setRecurringList((prev) => {
+          const next = [newItem, ...prev];
+          void saveOfflineData("recurring", next);
+          return next;
+        });
+
+        return { success: true, data: newItem };
       }
-      return res;
+
+      try {
+        const res = await createRecurringTransaction(data);
+        if (res.success && res.data) {
+          const enriched: RecurringTransaction = {
+            ...res.data,
+            wallet_name: w?.name,
+            wallet_color: w?.color,
+            wallet_icon: w?.icon,
+            category_name: c?.name,
+            category_icon: c?.icon,
+            category_color: c?.color,
+          };
+          setRecurringList((prev) => {
+            const next = [enriched, ...prev];
+            void saveOfflineData("recurring", next);
+            return next;
+          });
+        }
+        return res;
+      } catch {
+        const newItem: RecurringTransaction = {
+          id: `offline_rec_${Date.now()}`,
+          user_id: "local_user",
+          wallet_id: data.wallet_id,
+          category_id: data.category_id ?? null,
+          description: data.description,
+          type: data.type,
+          amount: data.amount,
+          frequency: data.frequency,
+          start_date: data.start_date,
+          next_run_date: data.start_date,
+          last_run_date: null,
+          auto_create: data.auto_create ?? false,
+          is_active: data.is_active ?? true,
+          is_synced: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+          wallet_name: w?.name,
+          wallet_color: w?.color,
+          wallet_icon: w?.icon,
+          category_name: c?.name,
+          category_icon: c?.icon,
+          category_color: c?.color,
+        };
+
+        await addOfflineMutation({
+          entity: "recurring",
+          action: "create",
+          payload: data,
+        });
+
+        setRecurringList((prev) => {
+          const next = [newItem, ...prev];
+          void saveOfflineData("recurring", next);
+          return next;
+        });
+
+        return { success: true, data: newItem };
+      }
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteRecurringTransaction(id);
-    if (res.success) {
-      setRecurringList((prev) => prev.filter((item) => item.id !== id));
-    } else {
-      alert(res.error ?? "Gagal menghapus jadwal");
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      await addOfflineMutation({
+        entity: "recurring",
+        action: "delete",
+        payload: { id },
+      });
+      setRecurringList((prev) => {
+        const next = prev.filter((item) => item.id !== id);
+        void saveOfflineData("recurring", next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const res = await deleteRecurringTransaction(id);
+      if (res.success) {
+        setRecurringList((prev) => {
+          const next = prev.filter((item) => item.id !== id);
+          void saveOfflineData("recurring", next);
+          return next;
+        });
+      } else {
+        alert(res.error ?? "Gagal menghapus jadwal");
+      }
+    } catch {
+      await addOfflineMutation({
+        entity: "recurring",
+        action: "delete",
+        payload: { id },
+      });
+      setRecurringList((prev) => {
+        const next = prev.filter((item) => item.id !== id);
+        void saveOfflineData("recurring", next);
+        return next;
+      });
     }
   };
 

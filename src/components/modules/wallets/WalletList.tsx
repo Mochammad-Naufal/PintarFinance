@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Wallet as WalletIcon } from "lucide-react";
 import { type Wallet, type WalletInput } from "@/types/finance";
 import { WalletCard } from "./WalletCard";
 import { WalletModal } from "./WalletModal";
 import { createWallet, deleteWallet, updateWallet } from "@/actions/wallets";
 import { formatCurrency } from "@/lib/utils";
+import {
+  addOfflineMutation,
+  getOfflineData,
+  saveOfflineData,
+} from "@/lib/offline/db";
 
 interface WalletListProps {
   initialWallets: Wallet[];
@@ -16,6 +21,30 @@ export function WalletList({ initialWallets }: WalletListProps) {
   const [wallets, setWallets] = useState<Wallet[]>(initialWallets);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
+
+  // Cache initial server data or fallback to offline cached data (SWR)
+  useEffect(() => {
+    if (initialWallets && initialWallets.length > 0) {
+      void saveOfflineData("wallets", initialWallets);
+      setWallets(initialWallets);
+    } else {
+      void getOfflineData<Wallet[]>("wallets").then((cached) => {
+        if (cached && cached.length > 0) {
+          setWallets(cached);
+        }
+      });
+    }
+
+    const handleDataUpdated = async () => {
+      const cached = await getOfflineData<Wallet[]>("wallets");
+      if (cached && cached.length > 0) {
+        setWallets(cached);
+      }
+    };
+
+    window.addEventListener("pf:data-updated", handleDataUpdated);
+    return () => window.removeEventListener("pf:data-updated", handleDataUpdated);
+  }, [initialWallets]);
 
   const totalBalance = wallets.reduce((acc, w) => acc + w.balance, 0);
 
@@ -31,28 +60,165 @@ export function WalletList({ initialWallets }: WalletListProps) {
 
   const handleSave = async (data: WalletInput) => {
     if (editingWallet) {
-      const res = await updateWallet(editingWallet.id, data);
-      if (res.success && res.data) {
-        setWallets((prev) =>
-          prev.map((w) => (w.id === editingWallet.id ? res.data! : w))
-        );
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const updatedWallet: Wallet = {
+          ...editingWallet,
+          name: data.name,
+          type: data.type,
+          balance: data.balance,
+          color: data.color,
+          icon: data.icon,
+          updated_at: new Date().toISOString(),
+        };
+        await addOfflineMutation({
+          entity: "wallet",
+          action: "update",
+          payload: { id: editingWallet.id, data },
+        });
+        setWallets((prev) => {
+          const next = prev.map((w) => (w.id === editingWallet.id ? updatedWallet : w));
+          void saveOfflineData("wallets", next);
+          return next;
+        });
+        return { success: true, data: updatedWallet };
       }
-      return res;
+
+      try {
+        const res = await updateWallet(editingWallet.id, data);
+        if (res.success && res.data) {
+          setWallets((prev) => {
+            const next = prev.map((w) => (w.id === editingWallet.id ? res.data! : w));
+            void saveOfflineData("wallets", next);
+            return next;
+          });
+        }
+        return res;
+      } catch {
+        const updatedWallet: Wallet = {
+          ...editingWallet,
+          name: data.name,
+          type: data.type,
+          balance: data.balance,
+          color: data.color,
+          icon: data.icon,
+          updated_at: new Date().toISOString(),
+        };
+        await addOfflineMutation({
+          entity: "wallet",
+          action: "update",
+          payload: { id: editingWallet.id, data },
+        });
+        setWallets((prev) => {
+          const next = prev.map((w) => (w.id === editingWallet.id ? updatedWallet : w));
+          void saveOfflineData("wallets", next);
+          return next;
+        });
+        return { success: true, data: updatedWallet };
+      }
     } else {
-      const res = await createWallet(data);
-      if (res.success && res.data) {
-        setWallets((prev) => [...prev, res.data!]);
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const newWallet: Wallet = {
+          id: `offline_wallet_${Date.now()}`,
+          user_id: "local_user",
+          name: data.name,
+          type: data.type,
+          balance: data.balance,
+          color: data.color,
+          icon: data.icon,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+        };
+        await addOfflineMutation({
+          entity: "wallet",
+          action: "create",
+          payload: data,
+        });
+        setWallets((prev) => {
+          const next = [...prev, newWallet];
+          void saveOfflineData("wallets", next);
+          return next;
+        });
+        return { success: true, data: newWallet };
       }
-      return res;
+
+      try {
+        const res = await createWallet(data);
+        if (res.success && res.data) {
+          setWallets((prev) => {
+            const next = [...prev, res.data!];
+            void saveOfflineData("wallets", next);
+            return next;
+          });
+        }
+        return res;
+      } catch {
+        const newWallet: Wallet = {
+          id: `offline_wallet_${Date.now()}`,
+          user_id: "local_user",
+          name: data.name,
+          type: data.type,
+          balance: data.balance,
+          color: data.color,
+          icon: data.icon,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+        };
+        await addOfflineMutation({
+          entity: "wallet",
+          action: "create",
+          payload: data,
+        });
+        setWallets((prev) => {
+          const next = [...prev, newWallet];
+          void saveOfflineData("wallets", next);
+          return next;
+        });
+        return { success: true, data: newWallet };
+      }
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteWallet(id);
-    if (res.success) {
-      setWallets((prev) => prev.filter((w) => w.id !== id));
-    } else {
-      alert(res.error ?? "Gagal menghapus dompet");
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      await addOfflineMutation({
+        entity: "wallet",
+        action: "delete",
+        payload: { id },
+      });
+      setWallets((prev) => {
+        const next = prev.filter((w) => w.id !== id);
+        void saveOfflineData("wallets", next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const res = await deleteWallet(id);
+      if (res.success) {
+        setWallets((prev) => {
+          const next = prev.filter((w) => w.id !== id);
+          void saveOfflineData("wallets", next);
+          return next;
+        });
+      } else {
+        alert(res.error ?? "Gagal menghapus dompet");
+      }
+    } catch {
+      await addOfflineMutation({
+        entity: "wallet",
+        action: "delete",
+        payload: { id },
+      });
+      setWallets((prev) => {
+        const next = prev.filter((w) => w.id !== id);
+        void saveOfflineData("wallets", next);
+        return next;
+      });
     }
   };
 

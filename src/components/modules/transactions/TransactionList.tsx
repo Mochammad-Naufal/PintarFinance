@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, FileText, Plus, Receipt } from "lucide-react";
 import {
   type Category,
@@ -17,6 +17,11 @@ import { ExportModal } from "./ExportModal";
 import { AllTransactionsModal } from "./AllTransactionsModal";
 import { createTransaction, deleteTransaction } from "@/actions/transactions";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  addOfflineMutation,
+  getOfflineData,
+  saveOfflineData,
+} from "@/lib/offline/db";
 
 const DISPLAY_LIMIT = 15;
 
@@ -44,6 +49,34 @@ export function TransactionList({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAllModalOpen, setIsAllModalOpen] = useState(false);
+
+  // Cache initial server data or fallback to offline cached data (SWR)
+  useEffect(() => {
+    if (initialTransactions && initialTransactions.length > 0) {
+      void saveOfflineData("transactions", initialTransactions);
+      setTransactions(initialTransactions);
+    } else {
+      void getOfflineData<Transaction[]>("transactions").then((cached) => {
+        if (cached && cached.length > 0) {
+          setTransactions(cached);
+        }
+      });
+    }
+
+    if (wallets?.length) void saveOfflineData("wallets", wallets);
+    if (categories?.length) void saveOfflineData("categories", categories);
+    if (savingsGoals?.length) void saveOfflineData("savings_goals", savingsGoals);
+
+    const handleDataUpdated = async () => {
+      const cached = await getOfflineData<Transaction[]>("transactions");
+      if (cached && cached.length > 0) {
+        setTransactions(cached);
+      }
+    };
+
+    window.addEventListener("pf:data-updated", handleDataUpdated);
+    return () => window.removeEventListener("pf:data-updated", handleDataUpdated);
+  }, [initialTransactions, wallets, categories, savingsGoals]);
 
   // Client-side filtering for fast response
   const filteredTransactions = useMemo(() => {
@@ -104,16 +137,31 @@ export function TransactionList({
   }, [limitedTransactions]);
 
   const handleSave = async (data: TransactionInput) => {
-    const res = await createTransaction(data);
-    if (res.success && res.data) {
-      // Find joined metadata
-      const w = wallets.find((w) => w.id === res.data!.wallet_id);
-      const dw = wallets.find((w) => w.id === res.data!.destination_wallet_id);
-      const cat = categories.find((c) => c.id === res.data!.category_id);
-      const sg = savingsGoals.find((s) => s.id === res.data!.savings_goal_id);
+    const w = wallets.find((w) => w.id === data.wallet_id);
+    const dw = wallets.find((w) => w.id === data.destination_wallet_id);
+    const cat = categories.find((c) => c.id === data.category_id);
+    const sg = savingsGoals.find((s) => s.id === data.savings_goal_id);
 
-      const enriched: Transaction = {
-        ...res.data,
+    // If offline, create optimistic transaction & enqueue mutation
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      const offlineId = `offline_tx_${Date.now()}`;
+      const optimisticTx: Transaction = {
+        id: offlineId,
+        user_id: "local_user",
+        type: data.type,
+        wallet_id: data.wallet_id,
+        destination_wallet_id: data.destination_wallet_id ?? null,
+        category_id: data.category_id ?? null,
+        savings_goal_id: data.savings_goal_id ?? null,
+        amount: data.amount,
+        admin_fee: data.admin_fee ?? 0,
+        transaction_date: data.transaction_date,
+        description: data.description ?? null,
+        receipt_url: null,
+        is_synced: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: null,
         wallet_name: w?.name,
         wallet_color: w?.color,
         wallet_icon: w?.icon,
@@ -128,17 +176,134 @@ export function TransactionList({
         savings_goal_color: sg?.color,
       };
 
-      setTransactions((prev) => [enriched, ...prev]);
+      await addOfflineMutation({
+        entity: "transaction",
+        action: "create",
+        payload: data,
+      });
+
+      setTransactions((prev) => {
+        const next = [optimisticTx, ...prev];
+        void saveOfflineData("transactions", next);
+        return next;
+      });
+
+      return { success: true, data: optimisticTx };
     }
-    return res;
+
+    try {
+      const res = await createTransaction(data);
+      if (res.success && res.data) {
+        const enriched: Transaction = {
+          ...res.data,
+          wallet_name: w?.name,
+          wallet_color: w?.color,
+          wallet_icon: w?.icon,
+          destination_wallet_name: dw?.name,
+          destination_wallet_color: dw?.color,
+          destination_wallet_icon: dw?.icon,
+          category_name: cat?.name,
+          category_icon: cat?.icon,
+          category_color: cat?.color,
+          savings_goal_name: sg?.name,
+          savings_goal_icon: sg?.icon,
+          savings_goal_color: sg?.color,
+        };
+
+        setTransactions((prev) => {
+          const next = [enriched, ...prev];
+          void saveOfflineData("transactions", next);
+          return next;
+        });
+      }
+      return res;
+    } catch {
+      // Network drop during call -> queue offline
+      const offlineId = `offline_tx_${Date.now()}`;
+      const optimisticTx: Transaction = {
+        id: offlineId,
+        user_id: "local_user",
+        type: data.type,
+        wallet_id: data.wallet_id,
+        destination_wallet_id: data.destination_wallet_id ?? null,
+        category_id: data.category_id ?? null,
+        savings_goal_id: data.savings_goal_id ?? null,
+        amount: data.amount,
+        admin_fee: data.admin_fee ?? 0,
+        transaction_date: data.transaction_date,
+        description: data.description ?? null,
+        receipt_url: null,
+        is_synced: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: null,
+        wallet_name: w?.name,
+        wallet_color: w?.color,
+        wallet_icon: w?.icon,
+        destination_wallet_name: dw?.name,
+        destination_wallet_color: dw?.color,
+        destination_wallet_icon: dw?.icon,
+        category_name: cat?.name,
+        category_icon: cat?.icon,
+        category_color: cat?.color,
+        savings_goal_name: sg?.name,
+        savings_goal_icon: sg?.icon,
+        savings_goal_color: sg?.color,
+      };
+
+      await addOfflineMutation({
+        entity: "transaction",
+        action: "create",
+        payload: data,
+      });
+
+      setTransactions((prev) => {
+        const next = [optimisticTx, ...prev];
+        void saveOfflineData("transactions", next);
+        return next;
+      });
+
+      return { success: true, data: optimisticTx };
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteTransaction(id);
-    if (res.success) {
-      setTransactions((prev) => prev.filter((tx) => tx.id !== id));
-    } else {
-      alert(res.error ?? "Gagal menghapus transaksi");
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      await addOfflineMutation({
+        entity: "transaction",
+        action: "delete",
+        payload: { id },
+      });
+      setTransactions((prev) => {
+        const next = prev.filter((tx) => tx.id !== id);
+        void saveOfflineData("transactions", next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const res = await deleteTransaction(id);
+      if (res.success) {
+        setTransactions((prev) => {
+          const next = prev.filter((tx) => tx.id !== id);
+          void saveOfflineData("transactions", next);
+          return next;
+        });
+      } else {
+        alert(res.error ?? "Gagal menghapus transaksi");
+      }
+    } catch {
+      await addOfflineMutation({
+        entity: "transaction",
+        action: "delete",
+        payload: { id },
+      });
+      setTransactions((prev) => {
+        const next = prev.filter((tx) => tx.id !== id);
+        void saveOfflineData("transactions", next);
+        return next;
+      });
     }
   };
 

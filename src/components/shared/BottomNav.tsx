@@ -26,6 +26,11 @@ import { getSavingsGoals } from "@/actions/savings";
 import { TransactionModal } from "@/components/modules/transactions/TransactionModal";
 import { QuickEntryModal } from "@/components/modules/ai/QuickEntryModal";
 import { ReceiptScanModal } from "@/components/modules/ai/ReceiptScanModal";
+import {
+  addOfflineMutation,
+  getOfflineData,
+  saveOfflineData,
+} from "@/lib/offline/db";
 
 // ─── Nav Items ────────────────────────────────────────────────────────────────
 
@@ -65,6 +70,19 @@ export function BottomNav() {
 
   const fetchModalData = async () => {
     try {
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const [w, c, s] = await Promise.all([
+          getOfflineData<Wallet[]>("wallets"),
+          getOfflineData<Category[]>("categories"),
+          getOfflineData<SavingsGoal[]>("savings_goals"),
+        ]);
+        if (w) setWallets(w);
+        if (c) setCategories(c);
+        if (s) setSavingsGoals(s);
+        setHasLoadedData(true);
+        return;
+      }
+
       const [w, c, s] = await Promise.all([
         getWallets(),
         getCategories(),
@@ -74,8 +92,21 @@ export function BottomNav() {
       setCategories(c);
       setSavingsGoals(s);
       setHasLoadedData(true);
+
+      if (w?.length) void saveOfflineData("wallets", w);
+      if (c?.length) void saveOfflineData("categories", c);
+      if (s?.length) void saveOfflineData("savings_goals", s);
     } catch (err) {
-      console.error("Failed to preload speed dial modal data:", err);
+      console.warn("Failed to preload online modal data, trying offline cache:", err);
+      const [w, c, s] = await Promise.all([
+        getOfflineData<Wallet[]>("wallets"),
+        getOfflineData<Category[]>("categories"),
+        getOfflineData<SavingsGoal[]>("savings_goals"),
+      ]);
+      if (w) setWallets(w);
+      if (c) setCategories(c);
+      if (s) setSavingsGoals(s);
+      setHasLoadedData(true);
     }
   };
 
@@ -272,11 +303,71 @@ export function BottomNav() {
         isOpen={isManualModalOpen}
         onClose={() => setIsManualModalOpen(false)}
         onSave={async (data) => {
-          const res = await createTransaction(data);
-          if (res.success) {
+          if (typeof window !== "undefined" && !navigator.onLine) {
+            await addOfflineMutation({
+              entity: "transaction",
+              action: "create",
+              payload: data,
+            });
             handleModalSuccess();
+            return {
+              success: true,
+              data: {
+                id: `offline_tx_${Date.now()}`,
+                user_id: "local_user",
+                type: data.type,
+                wallet_id: data.wallet_id,
+                destination_wallet_id: data.destination_wallet_id ?? null,
+                category_id: data.category_id ?? null,
+                savings_goal_id: data.savings_goal_id ?? null,
+                amount: data.amount,
+                admin_fee: data.admin_fee ?? 0,
+                transaction_date: data.transaction_date,
+                description: data.description ?? null,
+                receipt_url: null,
+                is_synced: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                deleted_at: null,
+              },
+            };
           }
-          return res;
+
+          try {
+            const res = await createTransaction(data);
+            if (res.success) {
+              handleModalSuccess();
+            }
+            return res;
+          } catch {
+            await addOfflineMutation({
+              entity: "transaction",
+              action: "create",
+              payload: data,
+            });
+            handleModalSuccess();
+            return {
+              success: true,
+              data: {
+                id: `offline_tx_${Date.now()}`,
+                user_id: "local_user",
+                type: data.type,
+                wallet_id: data.wallet_id,
+                destination_wallet_id: data.destination_wallet_id ?? null,
+                category_id: data.category_id ?? null,
+                savings_goal_id: data.savings_goal_id ?? null,
+                amount: data.amount,
+                admin_fee: data.admin_fee ?? 0,
+                transaction_date: data.transaction_date,
+                description: data.description ?? null,
+                receipt_url: null,
+                is_synced: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                deleted_at: null,
+              },
+            };
+          }
         }}
         wallets={wallets}
         categories={categories}

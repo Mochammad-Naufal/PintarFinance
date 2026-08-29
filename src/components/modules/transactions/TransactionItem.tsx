@@ -99,6 +99,15 @@ export function TransactionItem({
 
             <span>•</span>
             <span>{formatDate(transaction.transaction_date, "dd MMM yyyy, HH:mm")}</span>
+
+            {transaction.is_synced === false && (
+              <>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  <span>Offline</span>
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Target } from "lucide-react";
 import { type SavingsGoal, type SavingsGoalInput } from "@/types/finance";
 import { SavingsGoalCard } from "./SavingsGoalCard";
@@ -13,6 +13,11 @@ import {
   updateSavingsGoal,
 } from "@/actions/savings";
 import { formatCurrency } from "@/lib/utils";
+import {
+  addOfflineMutation,
+  getOfflineData,
+  saveOfflineData,
+} from "@/lib/offline/db";
 
 interface SavingsGoalListProps {
   initialGoals: SavingsGoal[];
@@ -23,6 +28,30 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [invitingGoal, setInvitingGoal] = useState<SavingsGoal | null>(null);
+
+  // Cache initial server data or fallback to offline cached data (SWR)
+  useEffect(() => {
+    if (initialGoals && initialGoals.length > 0) {
+      void saveOfflineData("savings_goals", initialGoals);
+      setGoals(initialGoals);
+    } else {
+      void getOfflineData<SavingsGoal[]>("savings_goals").then((cached) => {
+        if (cached && cached.length > 0) {
+          setGoals(cached);
+        }
+      });
+    }
+
+    const handleDataUpdated = async () => {
+      const cached = await getOfflineData<SavingsGoal[]>("savings_goals");
+      if (cached && cached.length > 0) {
+        setGoals(cached);
+      }
+    };
+
+    window.addEventListener("pf:data-updated", handleDataUpdated);
+    return () => window.removeEventListener("pf:data-updated", handleDataUpdated);
+  }, [initialGoals]);
 
   const totalCurrent = goals.reduce((acc, g) => acc + g.current_amount, 0);
   const totalTarget = goals.reduce((acc, g) => acc + g.target_amount, 0);
@@ -41,35 +70,184 @@ export function SavingsGoalList({ initialGoals }: SavingsGoalListProps) {
 
   const handleSave = async (data: SavingsGoalInput) => {
     if (editingGoal) {
-      const res = await updateSavingsGoal(editingGoal.id, data);
-      if (res.success && res.data) {
-        setGoals((prev) =>
-          prev.map((g) => (g.id === editingGoal.id ? { ...g, ...res.data! } : g))
-        );
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const updatedGoal: SavingsGoal = {
+          ...editingGoal,
+          name: data.name,
+          target_amount: data.target_amount,
+          target_date: data.target_date ?? null,
+          color: data.color,
+          icon: data.icon,
+        };
+        await addOfflineMutation({
+          entity: "savings_goal",
+          action: "update",
+          payload: { id: editingGoal.id, data },
+        });
+        setGoals((prev) => {
+          const next = prev.map((g) => (g.id === editingGoal.id ? updatedGoal : g));
+          void saveOfflineData("savings_goals", next);
+          return next;
+        });
+        return { success: true, data: updatedGoal };
       }
-      return res;
+
+      try {
+        const res = await updateSavingsGoal(editingGoal.id, data);
+        if (res.success && res.data) {
+          setGoals((prev) => {
+            const next = prev.map((g) => (g.id === editingGoal.id ? { ...g, ...res.data! } : g));
+            void saveOfflineData("savings_goals", next);
+            return next;
+          });
+        }
+        return res;
+      } catch {
+        const updatedGoal: SavingsGoal = {
+          ...editingGoal,
+          name: data.name,
+          target_amount: data.target_amount,
+          target_date: data.target_date ?? null,
+          color: data.color,
+          icon: data.icon,
+        };
+        await addOfflineMutation({
+          entity: "savings_goal",
+          action: "update",
+          payload: { id: editingGoal.id, data },
+        });
+        setGoals((prev) => {
+          const next = prev.map((g) => (g.id === editingGoal.id ? updatedGoal : g));
+          void saveOfflineData("savings_goals", next);
+          return next;
+        });
+        return { success: true, data: updatedGoal };
+      }
     } else {
-      const res = await createSavingsGoal(data);
-      if (res.success && res.data) {
-        setGoals((prev) => [...prev, res.data!]);
+      if (typeof window !== "undefined" && !navigator.onLine) {
+        const newGoal: SavingsGoal = {
+          id: `offline_goal_${Date.now()}`,
+          user_id: "local_user",
+          name: data.name,
+          target_amount: data.target_amount,
+          current_amount: 0,
+          target_date: data.target_date ?? null,
+          color: data.color,
+          icon: data.icon,
+          is_completed: false,
+          is_synced: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+          is_shared: false,
+          user_role: "owner",
+          members: [],
+        };
+        await addOfflineMutation({
+          entity: "savings_goal",
+          action: "create",
+          payload: data,
+        });
+        setGoals((prev) => {
+          const next = [...prev, newGoal];
+          void saveOfflineData("savings_goals", next);
+          return next;
+        });
+        return { success: true, data: newGoal };
       }
-      return res;
+
+      try {
+        const res = await createSavingsGoal(data);
+        if (res.success && res.data) {
+          setGoals((prev) => {
+            const next = [...prev, res.data!];
+            void saveOfflineData("savings_goals", next);
+            return next;
+          });
+        }
+        return res;
+      } catch {
+        const newGoal: SavingsGoal = {
+          id: `offline_goal_${Date.now()}`,
+          user_id: "local_user",
+          name: data.name,
+          target_amount: data.target_amount,
+          current_amount: 0,
+          target_date: data.target_date ?? null,
+          color: data.color,
+          icon: data.icon,
+          is_completed: false,
+          is_synced: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+          is_shared: false,
+          user_role: "owner",
+          members: [],
+        };
+        await addOfflineMutation({
+          entity: "savings_goal",
+          action: "create",
+          payload: data,
+        });
+        setGoals((prev) => {
+          const next = [...prev, newGoal];
+          void saveOfflineData("savings_goals", next);
+          return next;
+        });
+        return { success: true, data: newGoal };
+      }
     }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteSavingsGoal(id);
-    if (res.success) {
-      setGoals((prev) => prev.filter((g) => g.id !== id));
-    } else {
-      alert(res.error ?? "Gagal menghapus target impian");
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      await addOfflineMutation({
+        entity: "savings_goal",
+        action: "delete",
+        payload: { id },
+      });
+      setGoals((prev) => {
+        const next = prev.filter((g) => g.id !== id);
+        void saveOfflineData("savings_goals", next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const res = await deleteSavingsGoal(id);
+      if (res.success) {
+        setGoals((prev) => {
+          const next = prev.filter((g) => g.id !== id);
+          void saveOfflineData("savings_goals", next);
+          return next;
+        });
+      } else {
+        alert(res.error ?? "Gagal menghapus target impian");
+      }
+    } catch {
+      await addOfflineMutation({
+        entity: "savings_goal",
+        action: "delete",
+        payload: { id },
+      });
+      setGoals((prev) => {
+        const next = prev.filter((g) => g.id !== id);
+        void saveOfflineData("savings_goals", next);
+        return next;
+      });
     }
   };
 
   const handleLeave = async (id: string) => {
     const res = await leaveSavingsGoal(id);
     if (res.success) {
-      setGoals((prev) => prev.filter((g) => g.id !== id));
+      setGoals((prev) => {
+        const next = prev.filter((g) => g.id !== id);
+        void saveOfflineData("savings_goals", next);
+        return next;
+      });
       alert("Anda telah keluar dari pos tabungan bersama.");
     } else {
       alert(res.error ?? "Gagal keluar dari pos tabungan");

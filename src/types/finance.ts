@@ -13,6 +13,7 @@ export interface Wallet {
   color: string;
   icon: string;
   is_active: boolean;
+  is_synced?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -82,6 +83,7 @@ export interface SavingsGoal {
   icon: string;
   color: string;
   is_completed: boolean;
+  is_synced?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -125,6 +127,7 @@ export interface Transaction {
   transaction_date: string;
   description: string | null;
   receipt_url: string | null;
+  is_synced?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -238,6 +241,7 @@ export interface RecurringTransaction {
   description: string;
   is_active: boolean;
   auto_create: boolean;
+  is_synced?: boolean;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -290,6 +294,7 @@ export interface Budget {
   category_name: string;
   category_icon: string;
   category_color: string;
+  is_synced?: boolean;
   created_at: string;
   updated_at: string;
 }

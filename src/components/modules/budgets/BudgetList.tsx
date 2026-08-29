@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -19,6 +19,11 @@ import { BudgetSummary } from "./BudgetSummary";
 import { BudgetModal } from "./BudgetModal";
 import { deleteBudget, upsertBudget } from "@/actions/budgets";
 import { formatDate } from "@/lib/utils";
+import {
+  addOfflineMutation,
+  getOfflineData,
+  saveOfflineData,
+} from "@/lib/offline/db";
 
 interface BudgetListProps {
   initialBudgets: Budget[];
@@ -50,6 +55,30 @@ export function BudgetList({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
 
+  // Cache initial server data or fallback to offline cached data (SWR)
+  useEffect(() => {
+    if (initialBudgets && initialBudgets.length > 0) {
+      void saveOfflineData("budgets", initialBudgets);
+      setBudgets(initialBudgets);
+    } else {
+      void getOfflineData<Budget[]>("budgets").then((cached) => {
+        if (cached && cached.length > 0) {
+          setBudgets(cached);
+        }
+      });
+    }
+
+    const handleDataUpdated = async () => {
+      const cached = await getOfflineData<Budget[]>("budgets");
+      if (cached && cached.length > 0) {
+        setBudgets(cached);
+      }
+    };
+
+    window.addEventListener("pf:data-updated", handleDataUpdated);
+    return () => window.removeEventListener("pf:data-updated", handleDataUpdated);
+  }, [initialBudgets]);
+
   const nowPeriod = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const isCurrentMonth = currentPeriod === nowPeriod;
 
@@ -68,25 +97,135 @@ export function BudgetList({
   };
 
   const handleSave = async (data: BudgetInput) => {
-    const res = await upsertBudget(data);
-    if (res.success && res.data) {
-      setBudgets((prev) => {
-        const exists = prev.some((b) => b.id === res.data!.id);
-        if (exists) {
-          return prev.map((b) => (b.id === res.data!.id ? res.data! : b));
-        }
-        return [...prev, res.data!];
+    const cat = categories.find((c) => c.id === data.category_id);
+
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      const pct = editingBudget?.percentage || 0;
+      const offlineBudget: Budget = {
+        id: editingBudget?.id || `offline_budget_${Date.now()}`,
+        user_id: "local_user",
+        category_id: data.category_id,
+        category_name: cat?.name || "Kategori",
+        category_icon: cat?.icon || "graduation-cap",
+        category_color: cat?.color || "#10b981",
+        limit_amount: data.limit_amount,
+        spent_amount: editingBudget?.spent_amount || 0,
+        remaining_amount: data.limit_amount - (editingBudget?.spent_amount || 0),
+        percentage: pct,
+        status: pct >= 100 ? "danger" : pct >= 75 ? "warning" : "safe",
+        is_synced: false,
+        period: data.period,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      await addOfflineMutation({
+        entity: "budget",
+        action: "upsert",
+        payload: data,
       });
+
+      setBudgets((prev) => {
+        const exists = prev.some((b) => b.category_id === data.category_id);
+        const next = exists
+          ? prev.map((b) => (b.category_id === data.category_id ? offlineBudget : b))
+          : [...prev, offlineBudget];
+        void saveOfflineData("budgets", next);
+        return next;
+      });
+
+      return { success: true, data: offlineBudget };
     }
-    return res;
+
+    try {
+      const res = await upsertBudget(data);
+      if (res.success && res.data) {
+        setBudgets((prev) => {
+          const exists = prev.some((b) => b.id === res.data!.id);
+          const next = exists
+            ? prev.map((b) => (b.id === res.data!.id ? res.data! : b))
+            : [...prev, res.data!];
+          void saveOfflineData("budgets", next);
+          return next;
+        });
+      }
+      return res;
+    } catch {
+      const pct = editingBudget?.percentage || 0;
+      const offlineBudget: Budget = {
+        id: editingBudget?.id || `offline_budget_${Date.now()}`,
+        user_id: "local_user",
+        category_id: data.category_id,
+        category_name: cat?.name || "Kategori",
+        category_icon: cat?.icon || "graduation-cap",
+        category_color: cat?.color || "#10b981",
+        limit_amount: data.limit_amount,
+        spent_amount: editingBudget?.spent_amount || 0,
+        remaining_amount: data.limit_amount - (editingBudget?.spent_amount || 0),
+        percentage: pct,
+        status: pct >= 100 ? "danger" : pct >= 75 ? "warning" : "safe",
+        is_synced: false,
+        period: data.period,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      await addOfflineMutation({
+        entity: "budget",
+        action: "upsert",
+        payload: data,
+      });
+
+      setBudgets((prev) => {
+        const exists = prev.some((b) => b.category_id === data.category_id);
+        const next = exists
+          ? prev.map((b) => (b.category_id === data.category_id ? offlineBudget : b))
+          : [...prev, offlineBudget];
+        void saveOfflineData("budgets", next);
+        return next;
+      });
+
+      return { success: true, data: offlineBudget };
+    }
   };
 
   const handleDelete = async (id: string) => {
-    const res = await deleteBudget(id);
-    if (res.success) {
-      setBudgets((prev) => prev.filter((b) => b.id !== id));
-    } else {
-      alert(res.error ?? "Gagal menghapus anggaran");
+    if (typeof window !== "undefined" && !navigator.onLine) {
+      await addOfflineMutation({
+        entity: "budget",
+        action: "delete",
+        payload: { id },
+      });
+      setBudgets((prev) => {
+        const next = prev.filter((b) => b.id !== id);
+        void saveOfflineData("budgets", next);
+        return next;
+      });
+      return;
+    }
+
+    try {
+      const res = await deleteBudget(id);
+      if (res.success) {
+        setBudgets((prev) => {
+          const next = prev.filter((b) => b.id !== id);
+          void saveOfflineData("budgets", next);
+          return next;
+        });
+      } else {
+        alert(res.error ?? "Gagal menghapus anggaran");
+      }
+    } catch {
+      await addOfflineMutation({
+        entity: "budget",
+        action: "delete",
+        payload: { id },
+      });
+      setBudgets((prev) => {
+        const next = prev.filter((b) => b.id !== id);
+        void saveOfflineData("budgets", next);
+        return next;
+      });
     }
   };
 
