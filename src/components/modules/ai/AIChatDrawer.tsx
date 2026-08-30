@@ -47,12 +47,12 @@ export function AIChatDrawer() {
     }
   }, [isOpen, messages, isLoading]);
 
-  // Auto-resize textarea
+  // Auto-resize textarea (max 3 lines / 76px)
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
+    ta.style.height = `${Math.min(ta.scrollHeight, 76)}px`;
   }, [input]);
 
   const handleSendMessage = async (textToSend?: string) => {
@@ -258,7 +258,7 @@ export function AIChatDrawer() {
               ))}
             </div>
 
-            {/* Input Form — Auto-expanding Textarea */}
+            {/* Input Form — Auto-expanding Textarea (capped at 3 lines / max-h-[76px]) */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -274,13 +274,13 @@ export function AIChatDrawer() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500 resize-none overflow-y-auto leading-relaxed transition-all"
-                style={{ minHeight: "40px", maxHeight: "160px" }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500 resize-none overflow-y-auto leading-relaxed max-h-[76px] min-h-[40px] transition-[border-color,background-color]"
+                style={{ maxHeight: "76px" }}
               />
               <button
                 type="submit"
                 disabled={isLoading || !input.trim()}
-                className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-all active:scale-90 shrink-0 shadow-xs cursor-pointer self-end"
+                className="h-10 w-10 flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50 transition-all active:scale-90 shrink-0 shadow-xs cursor-pointer self-end"
                 title="Kirim Pesan (Enter)"
               >
                 <Send className="w-4 h-4" />
