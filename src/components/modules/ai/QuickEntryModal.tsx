@@ -19,6 +19,7 @@ import { type ParsedTransactionResult } from "@/lib/ai/types";
 import { parseQuickEntryText } from "@/actions/ai";
 import { createTransaction } from "@/actions/transactions";
 import { formatCurrency } from "@/lib/utils";
+import { VoiceTransactionButton } from "../transactions/VoiceTransactionButton";
 
 interface QuickEntryModalProps {
   isOpen: boolean;
@@ -204,7 +205,21 @@ export function QuickEntryModal({
               </div>
             )}
 
-            <div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                  Ketik atau Ucapkan Transaksi
+                </label>
+                <VoiceTransactionButton
+                  wallets={wallets}
+                  categories={categories}
+                  savingsGoals={savingsGoals}
+                  onParsed={(res) => {
+                    setPromptText(res.rawTranscript);
+                    handleParse(res.rawTranscript);
+                  }}
+                />
+              </div>
               <textarea
                 rows={3}
                 placeholder="Contoh: Beli bensin di Shell 75rb pake BCA, atau Dapet transferan freelance 2.5jt masuk GoPay..."

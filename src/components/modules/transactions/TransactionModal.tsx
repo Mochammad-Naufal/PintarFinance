@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, X } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
 import {
   type ActionResult,
   type Category,
@@ -13,7 +13,8 @@ import {
 } from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
 import { useCurrencyInput } from "@/lib/useCurrencyInput";
-
+import { VoiceTransactionButton } from "./VoiceTransactionButton";
+import { type ParsedVoiceTransaction } from "@/lib/speechParser";
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -40,7 +41,14 @@ function TransactionForm({
   savingsGoals,
 }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>("expense");
-  const { displayValue: amount, rawValue: rawAmount, onChange: onAmountChange, onBlur: onAmountBlur } = useCurrencyInput(0);
+  const {
+    displayValue: amount,
+    rawValue: rawAmount,
+    onChange: onAmountChange,
+    onBlur: onAmountBlur,
+    setValue: setAmountValue,
+  } = useCurrencyInput(0);
+
   const [walletId, setWalletId] = useState(wallets[0]?.id ?? "");
   const [destinationWalletId, setDestinationWalletId] = useState(
     wallets[1]?.id ?? wallets[0]?.id ?? ""
@@ -76,6 +84,10 @@ function TransactionForm({
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [voiceBanner, setVoiceBanner] = useState<{
+    transcript: string;
+    summary: string;
+  } | null>(null);
 
   // Keep categoryId in sync with availableCategories
   useEffect(() => {
@@ -94,6 +106,34 @@ function TransactionForm({
       const match = categories.find((c) => c.type === newType);
       if (match) setCategoryId(match.id);
     }
+  };
+
+  const handleVoiceParsed = (result: ParsedVoiceTransaction) => {
+    setType(result.type);
+    if (result.amount > 0) {
+      setAmountValue(result.amount);
+    }
+    if (result.categoryId) {
+      setCategoryId(result.categoryId);
+    }
+    if (result.walletId) {
+      setWalletId(result.walletId);
+    }
+    if (result.destinationWalletId) {
+      setDestinationWalletId(result.destinationWalletId);
+    }
+    if (result.savingsGoalId) {
+      setSavingsGoalId(result.savingsGoalId);
+    }
+    if (result.description) {
+      setDescription(result.description);
+    }
+
+    setVoiceBanner({
+      transcript: result.rawTranscript,
+      summary: "Data formulir terisi otomatis dari rekaman suara.",
+    });
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,11 +193,44 @@ function TransactionForm({
     >
       {/* Scrollable Form Body */}
       <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 overscroll-contain">
+        {/* Voice Recognition Feedback Banner */}
+        {voiceBanner && (
+          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-700 dark:text-emerald-300 flex items-start gap-2.5 animate-in fade-in duration-200">
+            <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">{voiceBanner.summary}</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic truncate mt-0.5">
+                &ldquo;{voiceBanner.transcript}&rdquo;
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setVoiceBanner(null)}
+              className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 dark:text-rose-400">
             {error}
           </div>
         )}
+
+        {/* Quick Voice Bar + Type Selector Header */}
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            Tipe Transaksi
+          </span>
+          <VoiceTransactionButton
+            wallets={wallets}
+            categories={categories}
+            savingsGoals={savingsGoals}
+            onParsed={handleVoiceParsed}
+          />
+        </div>
 
         {/* Type Selector Tabs */}
         <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
@@ -231,7 +304,7 @@ function TransactionForm({
             </select>
           </div>
 
-          {/* Conditional Field: Destination Wallet (Transfer), Category (Expense/Income), or Savings Goal (Saving) */}
+          {/* Destination Wallet for Transfer */}
           {type === "transfer" && (
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -242,17 +315,36 @@ function TransactionForm({
                 onChange={(e) => setDestinationWalletId(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
               >
-                {wallets
-                  .filter((w) => w.id !== walletId)
-                  .map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name} ({formatCurrency(w.balance)})
-                    </option>
-                  ))}
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({formatCurrency(w.balance)})
+                  </option>
+                ))}
               </select>
             </div>
           )}
 
+          {/* Savings Goal for Saving Type */}
+          {type === "saving" && (
+            <div>
+              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                Pos Impian Tujuan
+              </label>
+              <select
+                value={savingsGoalId}
+                onChange={(e) => setSavingsGoalId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+              >
+                {savingsGoals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} ({formatCurrency(g.current_amount)} / {formatCurrency(g.target_amount)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category for Expense/Income */}
           {(type === "expense" || type === "income") && (
             <div>
               <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
@@ -271,88 +363,76 @@ function TransactionForm({
               </select>
             </div>
           )}
+        </div>
 
-          {type === "saving" && (
-            <div>
-              <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Pos Tabungan Impian
-              </label>
-              <select
-                value={savingsGoalId}
-                onChange={(e) => setSavingsGoalId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-blue-500"
-              >
-                {savingsGoals.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name} ({formatCurrency(g.current_amount)} / {formatCurrency(g.target_amount)})
-                  </option>
-                ))}
-              </select>
+        {/* Admin Fee (Only for Expense/Transfer) */}
+        {(type === "expense" || type === "transfer") && (
+          <div>
+            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+              Biaya Admin / Transfer (Opsional)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 font-mono">
+                Rp
+              </span>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={adminFee}
+                onChange={(e) => setAdminFee(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 font-mono focus:outline-none focus:border-emerald-500"
+              />
             </div>
-          )}
-        </div>
-
-        {/* Date & Admin Fee */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-              Tanggal & Jam
-            </label>
-            <input
-              type="datetime-local"
-              required
-              value={transactionDate}
-              onChange={(e) => setTransactionDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
-            />
           </div>
+        )}
 
-          <div>
-            <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-              Biaya Admin (Opsional)
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={adminFee}
-              onChange={(e) => setAdminFee(e.target.value)}
-              placeholder="0"
-              className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none focus:border-emerald-500"
-            />
-          </div>
-        </div>
-
-        {/* Description / Merchant */}
+        {/* Date & Time Input */}
         <div>
           <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-            Catatan / Nama Merchant (Opsional)
+            Tanggal &amp; Waktu Transaksi
+          </label>
+          <input
+            type="datetime-local"
+            required
+            value={transactionDate}
+            onChange={(e) => setTransactionDate(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+
+        {/* Description / Notes */}
+        <div>
+          <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+            Keterangan / Catatan
           </label>
           <input
             type="text"
-            placeholder="e.g. Kopi Janji Jiwa, Makan Siang, Gaji Kantor"
+            placeholder="Contoh: Makan siang bareng teman kantor, bayar tagihan wifi..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
+            className="w-full px-3 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
           />
         </div>
       </div>
 
-      {/* Pinned Sticky Footer Buttons */}
-      <div className="flex items-center justify-end gap-2 px-5 sm:px-6 py-3.5 sm:py-4 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-900/90 backdrop-blur-xs shrink-0">
+      {/* Pinned Action Buttons (Sticky Footer) */}
+      <div className="flex items-center justify-end gap-2 px-5 sm:px-6 py-3.5 border-t border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-900/90 backdrop-blur-xs shrink-0">
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2.5 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-[0.98] transition-all"
+          disabled={isLoading}
+          className="px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all"
         >
           Batal
         </button>
         <button
           type="submit"
-          disabled={isLoading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 dark:bg-emerald-500 text-white hover:bg-emerald-500 dark:hover:bg-emerald-400 active:scale-[0.98] transition-all disabled:opacity-50 shadow-xs"
+          disabled={isLoading || rawAmount <= 0}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50 active:scale-95 transition-all shadow-xs cursor-pointer"
         >
           {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          Simpan Transaksi
+          <span>Simpan Transaksi</span>
         </button>
       </div>
     </form>

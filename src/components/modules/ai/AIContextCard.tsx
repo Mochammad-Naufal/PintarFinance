@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
+  BarChart3,
   CheckCircle2,
   Lightbulb,
   Loader2,
   RefreshCw,
   Sparkles,
+  Stethoscope,
+  Target,
   Zap,
 } from "lucide-react";
 import {
@@ -54,6 +58,16 @@ export function AIContextCard({
     }
   };
 
+  const keyMetricsList =
+    analysis?.keyMetrics && analysis.keyMetrics.length > 0
+      ? analysis.keyMetrics
+      : analysis?.keyInsights || [];
+
+  const actionStepsList =
+    analysis?.actionSteps && analysis.actionSteps.length > 0
+      ? analysis.actionSteps
+      : analysis?.actionableRecommendations || [];
+
   return (
     <div
       className={`rounded-2xl border transition-all duration-200 overflow-hidden shadow-xs ${
@@ -73,11 +87,11 @@ export function AIContextCard({
               <h3 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                 <span>Pintar AI Advisor: {moduleName}</span>
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  Pintar AI
+                  Dinamis &amp; Kontekstual
                 </span>
               </h3>
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
-                Dapatkan evaluasi kesehatan finansial otomatis dan rekomendasi aksi nyata berdasarkan data mutasi Anda.
+                Dapatkan evaluasi personal berdasarkan profesi, rentang usia, dan arus kas riil Anda.
               </p>
             </div>
           </div>
@@ -85,7 +99,7 @@ export function AIContextCard({
           <button
             type="button"
             onClick={handleFetchAnalysis}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-[0.98] transition-all shrink-0 shadow-xs"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-xs font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 active:scale-[0.98] transition-all shrink-0 shadow-xs cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600" />
             <span>Minta Analisis AI</span>
@@ -102,10 +116,10 @@ export function AIContextCard({
             </div>
             <div className="space-y-1">
               <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
-                Pintar AI sedang menganalisis data {moduleName}...
+                Pintar AI sedang menyusun diagnosis finansial...
               </p>
               <p className="text-[10px] text-zinc-400">
-                Mengevaluasi rasio likuiditas, pola pengeluaran, dan target finansial
+                Menalarkan profil profesi, rasio tabungan, beban hutang DTI, dan buffer kas darurat
               </p>
             </div>
           </div>
@@ -128,17 +142,17 @@ export function AIContextCard({
           <button
             type="button"
             onClick={handleFetchAnalysis}
-            className="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold hover:bg-zinc-200"
+            className="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-semibold hover:bg-zinc-200 cursor-pointer"
           >
             Coba Lagi
           </button>
         </div>
       )}
 
-      {/* ─── State 4: Success Result Card ─────────────────────────────────── */}
+      {/* ─── State 4: Success Result Card (3-Part Structure) ─────────────── */}
       {status === "success" && analysis && (
         <div className="p-5 sm:p-6 space-y-4 animate-in fade-in duration-200">
-          {/* Header Row: Badge & Refresh */}
+          {/* Header Row: Status Badge & Refresh */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
               {analysis.status === "healthy" && (
@@ -160,14 +174,14 @@ export function AIContextCard({
                 </span>
               )}
               <span className="text-[10px] text-zinc-400">
-                {analysis.usedModel === "gemini-flash-lite-latest" ? "Gemini Flash Lite" : analysis.usedModel === "gemini-3.1-flash-lite" ? "Gemini 3.1" : analysis.usedModel === "gemini-flash-latest" ? "Gemini Flash" : analysis.usedModel || "Pintar AI"} • {moduleName}
+                {analysis.usedModel ? "Gemini AI" : "Pintar AI CFP Engine"} • {moduleName}
               </span>
             </div>
 
             <button
               type="button"
               onClick={handleFetchAnalysis}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2.5 py-1 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
               title="Analisis Ulang Data Terbaru"
             >
               <RefreshCw className="w-3 h-3" />
@@ -175,45 +189,51 @@ export function AIContextCard({
             </button>
           </div>
 
-          {/* Headline & Summary */}
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-50 leading-snug">
-              {analysis.headline}
-            </h3>
-            <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1 leading-relaxed">
-              {analysis.summary}
+          {/* Headline */}
+          <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-50 leading-snug">
+            {analysis.headline}
+          </h3>
+
+          {/* ─── BAGIAN 1: Diagnosis Singkat ──────────────────────────────── */}
+          <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/80 dark:border-zinc-800 space-y-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <Stethoscope className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>1. Diagnosis Singkat</span>
+            </div>
+            <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+              {analysis.diagnosis || analysis.summary}
             </p>
           </div>
 
-          {/* 2-Column: Key Insights & Recommendations */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/60 text-xs">
-            {/* Insights */}
-            <div className="space-y-1.5">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 flex items-center gap-1">
-                <Lightbulb className="w-3 h-3 text-amber-500" />
-                <span>Temuan Kunci</span>
+          {/* ─── 2-Column: BAGIAN 2 (Sorotan Metrik) & BAGIAN 3 (Langkah Aksi) ─── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1 text-xs">
+            {/* BAGIAN 2: Sorotan Metrik Utama */}
+            <div className="space-y-2 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/60 dark:border-zinc-800/60">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5 text-amber-500" />
+                <span>2. Sorotan Metrik Utama</span>
               </h4>
-              <ul className="space-y-1 text-zinc-700 dark:text-zinc-300">
-                {analysis.keyInsights.map((insight, idx) => (
-                  <li key={idx} className="flex items-start gap-1.5 leading-relaxed">
-                    <span className="text-emerald-500 font-bold">•</span>
-                    <span>{insight}</span>
+              <ul className="space-y-1.5 text-zinc-700 dark:text-zinc-300">
+                {keyMetricsList.map((metric, idx) => (
+                  <li key={idx} className="flex items-start gap-2 leading-relaxed text-[11px]">
+                    <span className="text-emerald-500 font-bold mt-0.5">•</span>
+                    <span>{metric}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Recommendations */}
-            <div className="space-y-1.5">
-              <h4 className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 flex items-center gap-1">
-                <Zap className="w-3 h-3 text-blue-500" />
-                <span>Rekomendasi Tindakan</span>
+            {/* BAGIAN 3: 2-3 Langkah Aksi Konkret */}
+            <div className="space-y-2 p-3 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/30 border border-zinc-200/60 dark:border-zinc-800/60">
+              <h4 className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-blue-500" />
+                <span>3. Langkah Aksi Minggu Ini</span>
               </h4>
-              <ul className="space-y-1 text-zinc-700 dark:text-zinc-300">
-                {analysis.actionableRecommendations.map((rec, idx) => (
-                  <li key={idx} className="flex items-start gap-1.5 leading-relaxed">
-                    <ArrowRight className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-                    <span>{rec}</span>
+              <ul className="space-y-1.5 text-zinc-700 dark:text-zinc-300">
+                {actionStepsList.map((step, idx) => (
+                  <li key={idx} className="flex items-start gap-2 leading-relaxed text-[11px]">
+                    <ArrowRight className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
+                    <span>{step}</span>
                   </li>
                 ))}
               </ul>

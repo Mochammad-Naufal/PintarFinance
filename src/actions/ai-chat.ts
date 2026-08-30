@@ -4,6 +4,7 @@ import { sql } from "@/db";
 import { getCurrentUser } from "@/lib/supabase/user";
 import { type ActionResult } from "@/types/finance";
 import { getCurrentPeriod } from "./budgets";
+import { getUserProfile } from "./profile";
 import { formatCurrency } from "@/lib/utils";
 
 export interface ChatMessage {
@@ -13,11 +14,19 @@ export interface ChatMessage {
 
 interface ComprehensiveFinancialContext {
   userName: string;
+  age: number | null;
+  occupation: string | null;
   netWorth: number;
+  totalBalance: number;
+  totalSavings: number;
+  totalDebts: number;
   monthlyIncome: number;
   monthlyExpense: number;
   netSavings: number;
   savingsRatio: number;
+  emergencyRunwayMonths: number;
+  debtToIncomeRatio: number;
+  debtHealthStatus: "healthy" | "moderate" | "critical" | "debt_free";
   wallets: Array<{ name: string; type: string; balance: number }>;
   topCategories: Array<{ name: string; amount: number; percentage: number }>;
   savingsGoals: Array<{
@@ -47,6 +56,8 @@ function generateDeepFinancialConsultation(
 ): string {
   const query = userPrompt.toLowerCase().trim();
   const name = ctx.userName;
+  const occupation = ctx.occupation || "Pekerja Profesional";
+  const ageStr = ctx.age ? `${ctx.age} tahun` : "dewasa muda";
 
   // ── 1. Tanya Konsep Compounding vs Menabung Biasa ────────────────────────────
   if (
@@ -55,156 +66,59 @@ function generateDeepFinancialConsultation(
     query.includes("beda menabung") ||
     query.includes("reinvestasi")
   ) {
-    return `Halo **${name}**! Ini pertanyaan yang sangat fundamental dan krusial dalam perencanaan keuangan.
+    return `Halo **${name}**! Sebagai ${occupation} di usia ${ageStr}, memahami *compound interest* (bunga majemuk) adalah langkah strategis untuk mempercepat kebebasan finansial Anda.
 
-Jawabannya tegas: **Compound interest (bunga majemuk) TIDAK BEKERJA jika uang hanya ditabung di rekening bank biasa atau disimpan tunai.**
+Jawabannya tegas: **Compound interest TIDAK BEKERJA jika uang hanya ditabung di rekening bank biasa atau disimpan tunai.**
 
-Agar efek bunga majemuk (*compound return*) bekerja, uang Anda **wajib ditempatkan pada aset produktif yang menghasilkan imbal hasil (bunga, kupon, dividen, atau *capital growth*) yang diinvestasikan kembali (*reinvested*)**.
+Agar efek bunga majemuk (*compound return*) bekerja, uang Anda **wajib ditempatkan pada aset produktif yang menghasilkan imbal hasil (bunga, kupon, dividen, atau capital growth) yang diinvestasikan kembali (reinvested)**.
 
 📊 **Perbandingan Menabung Biasa vs Aset Berbunga:**
 
 1. **Menabung di Rekening Biasa (Bunga ~0%–1%):**
-   - Nilai uang Anda bertumbuh secara linear atau bahkan tergerus oleh inflasi (~3%–4%/thn) dan biaya administrasi bulanan (~Rp 15.000/bln).
-   - Uang Rp 10 juta yang Anda diamkan selama 5 tahun di tabungan biasa tetap bernilai nominal Rp 10 juta, namun daya belinya berkurang drastis.
+   - Tergerus oleh inflasi (~3%–4%/thn) dan biaya administrasi bulanan (~Rp 15.000/bln).
+   - Uang Rp 10 juta selama 5 tahun di tabungan biasa tetap Rp 10 juta, namun daya belinya berkurang.
 
 2. **Meletakkan Uang di Aset Produktif (Bunga Majemuk):**
-   - Modal Anda menghasilkan keuntungan di Tahun 1.
-   - Di Tahun 2, keuntungan Tahun 1 **bergabung dengan modal pokok** untuk menghasilkan keuntungan baru yang lebih besar.
-   - Hasilnya adalah kurva pertumbuhan **eksponensial** (*bunga di atas bunga*).
+   - Modal menghasilkan keuntungan di Tahun 1.
+   - Di Tahun 2, keuntungan Tahun 1 **bergabung dengan modal pokok** untuk menghasilkan keuntungan baru yang lebih besar (kurva eksponensial).
 
 💡 **Aset yang Mengaktifkan Bunga Majemuk di Indonesia:**
-- **Reksadana Pendapatan Tetap / Pasar Uang:** Keuntungan otomatis terakumulasi dalam Nilai Aktiva Bersih (NAB).
+- **Reksadana Pendapatan Tetap / Pasar Uang (RDPU):** Keuntungan otomatis terakumulasi dalam NAB.
 - **Surat Berharga Negara (SBN ORI/SR):** Kupon bulanan langsung dibelikan unit baru secara otomatis.
-- **Saham Berdividen (Dividen Reinvestment Plan):** Dividen kas digunakan kembali untuk membeli lembar saham tambahan.
-- **Deposito Digital:** Mengaktifkan opsi *Automatic Roll Over (ARO) + Bunga*.
+- **Saham Berdividen (DRIP):** Dividen kas digunakan kembali untuk membeli lembar saham tambahan.
+- **Deposito Digital:** Opsi *Automatic Roll Over (ARO) + Bunga*.
 
 Ada instrumen tertentu yang ingin kita bedah potensinya untuk portofolio Anda?`;
   }
 
-  // ── 2. Tanya Cara Lain / Alternatif ──────────────────────────────────────────
+  // ── 2. Tanya Profil / Status Keuangan Pengguna ────────────────────────────────
   if (
-    query.includes("cara lain") ||
-    query.includes("alternatif") ||
-    query.includes("opsi lain") ||
-    query.includes("selain itu") ||
-    query.includes("pilihan lain")
+    query.includes("kondisi") ||
+    query.includes("keuangan saya") ||
+    query.includes("evaluasi") ||
+    query.includes("sehat") ||
+    query.includes("posisi keuangan")
   ) {
-    return `Halo **${name}**! Tentu saja, selain instrumen pasar modal konvensional, ada beberapa alternatif strategis lainnya untuk mempercepat pertumbuhan kekayaan Anda:
+    return `Halo **${name}**! Berikut adalah ringkasan diagnosis finansial Anda sebagai **${occupation}** (${ageStr}):
 
-📈 **4 Alternatif Strategi Pertumbuhan Aset & Arus Kas:**
+🩺 **Diagnosis Arus Kas & Beban Hutang:**
+- **Kondisi Arus Kas:** ${ctx.netSavings >= 0 ? `Surplus sebesar ${formatCurrency(ctx.netSavings)} per bulan` : `Defisit sebesar ${formatCurrency(Math.abs(ctx.netSavings))} per bulan`}.
+- **Rasio Tabungan (Saving Rate):** **${ctx.savingsRatio}%** ${ctx.savingsRatio >= 20 ? "(✓ Sangat baik, di atas target 20%)" : "(⚠️ Di bawah target ideal 20%)"}.
+- **Rasio Beban Hutang (DTI):** **${ctx.debtToIncomeRatio}%** (Status: **${ctx.debtHealthStatus === "debt_free" ? "Bebas Hutang" : ctx.debtHealthStatus === "healthy" ? "Sehat" : "Waspada"}**).
+- **Runway Dana Darurat:** **${ctx.emergencyRunwayMonths} Bulan** (${formatCurrency(ctx.totalBalance)} likuid vs ${formatCurrency(ctx.monthlyExpense)} pengeluaran bulanan).
 
-1. **Investasi pada Diri Sendiri (*Upskilling & High-Income Skills*):**
-   - Tingkatkan kemampuan di bidang bernilai tinggi (misal: *data, tech, sales, konsultasi*) untuk mendongkrak penghasilan pokok bulanan Anda. Penghasilan yang lebih besar memperbesar porsi modal yang bisa diinvestasikan (*fuel for compounding*).
-
-2. **Bisnis Sampingan atau *Micro-Business* (*Side Hustle*):**
-   - Membangun bisnis produk digital, *e-commerce*, atau agensi jasa dengan *margin* laba tinggi. Keuntungan bersih dapat langsung diputar kembali (*reinvested*) ke dalam bisnis untuk *compounding* omzet.
-
-3. **Emas Batangan / Emas Digital Terjadwal:**
-   - Menyisihkan gramatur emas secara rutin sebagai aset lindung nilai (*hedging*) terhadap depresiasi mata uang dalam jangka panjang (5–10+ tahun).
-
-4. **Investasi Properti / REITs (Dana Investasi Real Estat):**
-   - Mengalokasikan dana ke efek beragun properti yang membagikan dividen sewa secara reguler tanpa repot mengelola fisik bangunan.
-
-💡 *Kunci Utama:* Kombinasikan 1 instrumen pelindung nilai (Dana Darurat di RDPU) dengan 1 instrumen bertumbuh (Saham/Bisnis) agar risiko tetap terukur.`;
+🎯 **Rekomendasi Langkah Aksi Minggu Ini:**
+1. Pertahankan rasio tabungan minimal 20% dan otomatiskan mutasi ke pos tabungan impian di awal bulan.
+2. Jaga agar rasio beban hutang DTI tetap di bawah 20% dari total penghasilan kotor bulanan.
+3. Alokasikan kelebihan likuiditas kas ke pos dana darurat hingga mencapai buffer minimal 6 bulan.`;
   }
 
-  // ── 3. Tata Cara / Langkah Memulai Compounding ──────────────────────────────
-  if (
-    query.includes("tata cara") ||
-    query.includes("cara melakukan") ||
-    query.includes("langkah") ||
-    query.includes("panduan") ||
-    query.includes("mulai compound")
-  ) {
-    return `Halo **${name}**! Berikut adalah panduan langkah demi langkah (*step-by-step*) untuk menjalankan keajaiban bunga majemuk (*compound interest*) secara nyata:
+  // ── 3. Pertanyaan Umum / Default CFP ──────────────────────────────────────────
+  return `Halo **${name}**! Saya telah menganalisis profil finansial Anda (${occupation}, ${ageStr}). 
 
-🚀 **5 Langkah Praktis Menjalankan Compounding Interest:**
+Saat ini Anda memiliki total aset bersih **${formatCurrency(ctx.netWorth)}** dengan rasio tabungan **${ctx.savingsRatio}%** dan kapasitas runway kas darurat **${ctx.emergencyRunwayMonths} bulan**.
 
-1. **Tentukan Modal Pokok & Komitmen Bulanan (*DCA*):**
-   - Mulai dengan modal awal (misal Rp 1.000.000) dan tetapkan setoran rutin bulanan (misal Rp 500.000 – Rp 1.500.000) yang langsung disisihkan di awal gajian (*Pay Yourself First*).
-
-2. **Pilih Platform & Instrumen Resmi Berizin OJK:**
-   - Gunakan aplikasi APERD / Sekuritas terpercaya (contoh: Bibit, Bareksa, Stockbit, Ajaib, Pluang, atau Bank Kustodian).
-   - Pilih instrumen sesuai target: **Reksadana Indeks / Saham Bluechip** untuk >5 tahun, atau **SBN / RDPT** untuk 1–3 tahun.
-
-3. **Aktifkan Fitur Auto-Debet & Reinvestasi Otomatis:**
-   - Kunci sukses bunga majemuk adalah **tidak menarik keuntungan (*capital gain* / dividen)**. Biarkan seluruh imbal hasil kembali membesar bersama modal pokok.
-
-4. **Disiplin Waktu (*Time in the Market > Timing the Market*):**
-   - Efek penggandaan bunga majemuk biasanya mulai terasa sangat masif setelah **tahun ke-5 hingga ke-10**. Jangan panik saat pasar berfluktuasi jangka pendek.
-
-5. **Gunakan Kalkulator Simulasi Pintar Finance:**
-   - Buka menu **Kalkulator Bunga** di navigasi samping untuk melihat visualisasi grafik pertumbuhan modal vs bunga per tahun!`;
-  }
-
-  // ── 4. Analisis Hemat & Pengurangan Pengeluaran ─────────────────────────────
-  if (
-    query.includes("hemat") ||
-    query.includes("kurangi") ||
-    query.includes("boros") ||
-    query.includes("pangkas") ||
-    query.includes("20%")
-  ) {
-    const topCat = ctx.topCategories[0];
-    const topCatName = topCat?.name || "Gaya Hidup & Konsumsi";
-    const topCatAmount = topCat?.amount || Math.round(ctx.monthlyExpense * 0.4);
-    const targetSavings = Math.round(ctx.monthlyExpense * 0.2);
-
-    return `Halo **${name}**! Mari kita bedah struktur pengeluaran Anda secara analitis dan strategis.
-
-Berdasarkan data transaksi bulan ini, total belanja Anda tercatat **${formatCurrency(
-      ctx.monthlyExpense
-    )}**. Target penghematan 20% berarti Anda dapat mengamankan surplus baru sebesar **${formatCurrency(
-      targetSavings
-    )}/bulan**.
-
-📊 **Audit Sektor Pengeluaran Terbesar:**
-Pos belanja paling dominan saat ini adalah **${topCatName}** sebesar **${formatCurrency(
-      topCatAmount
-    )}** (${topCat?.percentage || 35}% dari total pengeluaran).
-
-💡 **4 Langkah Strategis Pemangkasan Beban Keuangan:**
-1. **Aturan 3 Hari Audit Jajan:** Batasi frekuensi pesan-antar makanan 2x/minggu untuk menghemat Rp 400.000 – Rp 800.000/bulan.
-2. **Audit Komitmen Rutin:** Nonaktifkan langganan aplikasi yang jarang digunakan pada menu Transaksi Berulang.
-3. **Penerapan Cooling-off Period (24 Jam):** Tunda pembelian non-primer selama 24 jam sebelum transaksi.
-4. **Optimasi Biaya Admin:** Gunakan transfer BI-Fast tanpa biaya admin.`;
-  }
-
-  // ── 5. Dana Darurat & Mitigasi Risiko ────────────────────────────────────────
-  if (query.includes("darurat") || query.includes("emergency")) {
-    const monthlyLiving = ctx.monthlyExpense > 0 ? ctx.monthlyExpense : 3000000;
-    const minEmergency = monthlyLiving * 3;
-    const idealEmergency = monthlyLiving * 6;
-
-    return `Halo **${name}**, dana darurat (*Emergency Fund*) adalah pilar pertahanan utama dalam piramida finansial!
-
-📊 **Simulasi Kebutuhan Dana Darurat Anda:**
-- Pengeluaran Bulanan: **${formatCurrency(monthlyLiving)}**
-- Target Minimal (3 Bulan Biaya Hidup): **${formatCurrency(minEmergency)}**
-- Target Ideal (6 Bulan Biaya Hidup): **${formatCurrency(idealEmergency)}**
-- Likuiditas Dompet Anda Saat Ini: **${formatCurrency(ctx.netWorth)}**
-
-🛡️ **Rekomendasi Penempatan:**
-1. 60% di Tabungan Bank Digital / Rekening Terpisah untuk likuiditas instan.
-2. 40% di Reksadana Pasar Uang (RDPU) dengan imbal hasil 4.5%–6%/thn bebas pajak.`;
-  }
-
-  // ── 6. Default Dynamic Overview ─────────────────────────────────────────────
-  const surplusStatus =
-    ctx.netSavings >= 0
-      ? `surplus sebesar **+${formatCurrency(ctx.netSavings)}** (Rasio Tabungan: **${ctx.savingsRatio}%**)`
-      : `defisit sebesar **${formatCurrency(ctx.netSavings)}**`;
-
-  return `Halo **${name}**! Saya adalah asisten kecerdasan finansial **Pintar AI** Anda.
-
-Berikut adalah tinjauan ringkas portofolio Anda saat ini:
-- **Total Likuiditas Seluruh Dompet:** **${formatCurrency(ctx.netWorth)}** (${ctx.wallets.length} Akun)
-- **Arus Kas Bulan Berjalan:** Pemasukan ${formatCurrency(ctx.monthlyIncome)} vs Pengeluaran ${formatCurrency(ctx.monthlyExpense)} (${surplusStatus})
-- **Pos Tabungan Impian:** **${ctx.savingsGoals.length} target** aktif
-- **Pos Anggaran:** **${ctx.budgets.length} kategori**
-
-${activeContext ? `📌 *Konteks Halaman Aktif:* Sedang menganalisis modul **${activeContext}**.\n` : ""}
-Silakan ajukan pertanyaan seputar strategi investasi, cara menghitung kebutuhan dana darurat, optimasi anggaran, atau perencanaan target finansial Anda!`;
+Ada modul atau pertanyaan finansial spesifik yang ingin kita bahas bersama hari ini?`;
 }
 
 // ─── Main Server Action: sendFinancialChatMessage ─────────────────────────────
@@ -217,9 +131,10 @@ export async function sendFinancialChatMessage(
     const user = await getCurrentUser();
     const period = await getCurrentPeriod();
 
-    // 1. Gather comprehensive user financial snapshot
-    const [wallets, txSummary, goals, budgets, topCategoryRows, recurringRows] =
+    // 1. Gather comprehensive user financial & profile snapshot
+    const [profile, wallets, txSummary, goals, budgets, topCategoryRows, recurringRows, debtRows] =
       await Promise.all([
+        getUserProfile(),
         sql`
           SELECT name, type, balance
           FROM wallets
@@ -276,14 +191,46 @@ export async function sendFinancialChatMessage(
           WHERE user_id = ${user.id} AND is_active = true
           LIMIT 5
         `,
+        sql`
+          SELECT COALESCE(SUM(remaining_amount), 0) AS total_debts
+          FROM debts
+          WHERE user_id = ${user.id}
+            AND deleted_at IS NULL
+            AND type = 'debt'
+            AND status != 'paid'
+        `,
       ]);
 
     const totalBalance = wallets.reduce((acc, w) => acc + Number(w.balance), 0);
+    const totalSavings = goals.reduce((acc, g) => acc + Number(g.current_amount), 0);
+    const totalDebts = Number(debtRows[0]?.total_debts || 0);
+    const netWorth = (totalBalance + totalSavings) - totalDebts;
+
     const monthlyIncome = Number(txSummary[0]?.monthly_income || 0);
     const monthlyExpense = Number(txSummary[0]?.monthly_expense || 0);
     const netSavings = monthlyIncome - monthlyExpense;
     const savingsRatio =
       monthlyIncome > 0 ? Math.round((netSavings / monthlyIncome) * 100) : 0;
+    const emergencyRunwayMonths =
+      monthlyExpense > 0 ? Number((totalBalance / monthlyExpense).toFixed(1)) : 0;
+
+    const debtToIncomeRatio =
+      monthlyIncome > 0
+        ? Math.round((totalDebts / monthlyIncome) * 100)
+        : totalDebts > 0
+        ? 100
+        : 0;
+
+    let debtHealthStatus: ComprehensiveFinancialContext["debtHealthStatus"] = "debt_free";
+    if (totalDebts === 0) {
+      debtHealthStatus = "debt_free";
+    } else if (debtToIncomeRatio <= 20) {
+      debtHealthStatus = "healthy";
+    } else if (debtToIncomeRatio <= 40) {
+      debtHealthStatus = "moderate";
+    } else {
+      debtHealthStatus = "critical";
+    }
 
     const totalExpenseSum = monthlyExpense > 0 ? monthlyExpense : 1;
     const topCategories = topCategoryRows.map((r) => ({
@@ -319,12 +266,20 @@ export async function sendFinancialChatMessage(
     });
 
     const fullContext: ComprehensiveFinancialContext = {
-      userName: user.name || "Pengguna",
-      netWorth: totalBalance,
+      userName: profile.name || user.name || "Pengguna",
+      age: profile.age ?? null,
+      occupation: profile.occupation ?? null,
+      netWorth,
+      totalBalance,
+      totalSavings,
+      totalDebts,
       monthlyIncome,
       monthlyExpense,
       netSavings,
       savingsRatio,
+      emergencyRunwayMonths,
+      debtToIncomeRatio,
+      debtHealthStatus,
       wallets: wallets.map((w) => ({
         name: String(w.name),
         type: String(w.type),
@@ -354,22 +309,28 @@ export async function sendFinancialChatMessage(
         "gemini-3.1-flash-lite",
         "gemini-3.5-flash-lite",
         "gemini-flash-latest",
-        "gemma-4-31b-it",
       ];
 
-      const systemPrompt = `Kamu adalah Pintar AI — Financial Advisor & Certified Financial Planner (CFP) berdedikasi tinggi di aplikasi Pintar Finance.
-Persona kamu: Objektif, berwawasan luas, analitis, komunikatif, solutif, dan ramah dalam bahasa Indonesia.
-Jawablah pertanyaan pengguna secara langsung, spesifik, mendalam, dan kontekstual terhadap percakapan (termasuk pertanyaan lanjutan). Jangan pernah memberikan template kaku.
+      const systemPrompt = `Kamu adalah Pintar AI — Senior Financial Advisor & Certified Financial Planner (CFP) di aplikasi Pintar Finance.
+Persona: Objektif, berwawasan luas, analitis, suportif, dan ramah dalam bahasa Indonesia santun.
+Penalaran Profesi: Sesuaikan saran dengan profesi pengguna (${fullContext.occupation || "Pekerja Profesional"}) dan rentang usia (${fullContext.age ? `${fullContext.age} tahun` : "Dewasa Muda"}).
 
-DATA FINANSIAL PENGGUNA:
+DATA FINANSIAL RIIL PENGGUNA:
 - Nama: ${fullContext.userName}
-- Total Saldo: ${formatCurrency(fullContext.netWorth)}
+- Profesi: ${fullContext.occupation || "Pekerja Profesional"}
+- Usia: ${fullContext.age ? `${fullContext.age} tahun` : "Dewasa Muda"}
+- Total Net Worth (Aset Bersih): ${formatCurrency(fullContext.netWorth)}
+- Likuiditas Kas: ${formatCurrency(fullContext.totalBalance)}
+- Tabungan Terkunci: ${formatCurrency(fullContext.totalSavings)}
+- Sisa Hutang: ${formatCurrency(fullContext.totalDebts)}
 - Pemasukan Bulan Ini: ${formatCurrency(fullContext.monthlyIncome)}
 - Pengeluaran Bulan Ini: ${formatCurrency(fullContext.monthlyExpense)}
-- Surplus Bersih: ${formatCurrency(fullContext.netSavings)} (Rasio Tabungan: ${fullContext.savingsRatio}%)
-- Pos Tabungan Impian (${fullContext.savingsGoals.length}): ${JSON.stringify(fullContext.savingsGoals)}
-- Batas Anggaran (${fullContext.budgets.length}): ${JSON.stringify(fullContext.budgets)}
-${activeContext ? `- Konteks Modul: ${activeContext}` : ""}`;
+- Arus Kas Bersih: ${formatCurrency(fullContext.netSavings)} (Saving Rate: ${fullContext.savingsRatio}%)
+- Runway Dana Darurat: ${fullContext.emergencyRunwayMonths} Bulan
+- Rasio Beban Hutang (DTI): ${fullContext.debtToIncomeRatio}% (Status: ${fullContext.debtHealthStatus})
+- Pos Tabungan Impian: ${JSON.stringify(fullContext.savingsGoals)}
+- Batas Anggaran: ${JSON.stringify(fullContext.budgets)}
+${activeContext ? `- Modul Aktif: ${activeContext}` : ""}`;
 
       const geminiContents = [
         {
@@ -400,7 +361,7 @@ ${activeContext ? `- Konteks Modul: ${activeContext}` : ""}`;
               body: JSON.stringify({
                 contents: geminiContents,
                 generationConfig: {
-                  temperature: 0.6,
+                  temperature: 0.5,
                   maxOutputTokens: 1200,
                 },
               }),

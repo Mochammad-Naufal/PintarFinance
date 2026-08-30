@@ -4,13 +4,17 @@ import { sql } from "@/db";
 import { getCurrentUser } from "@/lib/supabase/user";
 import { type ActionResult } from "@/types/finance";
 import { getCurrentPeriod } from "./budgets";
+import { getUserProfile } from "./profile";
 import { formatCurrency } from "@/lib/utils";
 
 export interface AIAnalysisResponse {
   status: "healthy" | "warning" | "critical";
   headline: string;
+  diagnosis: string;
   summary: string;
+  keyMetrics: string[];
   keyInsights: string[];
+  actionSteps: string[];
   actionableRecommendations: string[];
   usedModel?: string;
 }
@@ -22,194 +26,263 @@ export type AIModuleType =
   | "savings"
   | "transactions";
 
-// ─── Deterministic Rule-Based Fallback Engine ─────────────────────────────────
+interface FinancialProfileSnapshot {
+  name: string;
+  age: number | null;
+  occupation: string | null;
+  netWorth: number;
+  totalBalance: number;
+  totalSavings: number;
+  totalDebts: number;
+  totalReceivables: number;
+  monthlyIncome: number;
+  monthlyExpense: number;
+  monthlyNet: number;
+  savingRate: number;
+  emergencyRunwayMonths: number;
+  debtToIncomeRatio: number;
+  debtHealthStatus: "healthy" | "moderate" | "critical" | "debt_free";
+  topExpenses: Array<{ name: string; amount: number; percentage: number }>;
+}
+
+// ─── Dynamic Certified Financial Planner Rule-Based Fallback Engine ──────────
 
 function generateFallbackAnalysis(
   moduleType: AIModuleType,
-  contextData: Record<string, unknown>
+  snapshot: FinancialProfileSnapshot,
+  extraData: Record<string, unknown>
 ): AIAnalysisResponse {
+  const name = snapshot.name || "Pengguna";
+  const occupation = snapshot.occupation || "Pekerja Profesional";
+  const age = snapshot.age ? `${snapshot.age} tahun` : "Dewasa Muda";
+  const savingRate = snapshot.savingRate;
+  const dti = snapshot.debtToIncomeRatio;
+  const runway = snapshot.emergencyRunwayMonths;
+  const topExp = snapshot.topExpenses[0];
+
+  // Dynamic Occupation context label
+  const isFreelance =
+    /freelance|lepas|wirausaha|bisnis|owner|trader|creator|jasa/i.test(
+      occupation
+    );
+  const isStudent = /mahasiswa|pelajar|fresh graduate|magang/i.test(occupation);
+
   switch (moduleType) {
     case "dashboard": {
-      const netWorth = (contextData.netWorth as number) || 0;
-      const income = (contextData.monthlyIncome as number) || 0;
-      const expense = (contextData.monthlyExpense as number) || 0;
-      const netSavings = income - expense;
-      const savingsRate = income > 0 ? Math.round((netSavings / income) * 100) : 0;
-
       let status: AIAnalysisResponse["status"] = "healthy";
-      let headline = "Kesehatan Finansial Berada pada Tren Positif";
+      let headline = `Tren Keuangan ${name} Berada pada Jalur Positif`;
 
-      if (netSavings < 0) {
+      if (snapshot.monthlyNet < 0 || dti > 40) {
         status = "critical";
-        headline = "Arus Kas Defisit: Pengeluaran Melebihi Pemasukan";
-      } else if (savingsRate < 20) {
+        headline = `Defisit Arus Kas & Beban Hutang Perlu Penanganan Segera`;
+      } else if (savingRate < 20 || (isFreelance && runway < 6) || runway < 3) {
         status = "warning";
-        headline = "Rasio Tabungan Rendah: Perlu Optimasi Anggaran";
+        headline = `Optimasi Buffer Kas & Alokasi Anggaran Diperlukan`;
       }
+
+      const diagnosis =
+        snapshot.monthlyNet >= 0
+          ? `Kondisi arus kas ${name} (${occupation}, ${age}) saat ini surplus ${formatCurrency(
+              snapshot.monthlyNet
+            )} per bulan dengan rasio tabungan ${savingRate}% dan rasio beban hutang DTI ${dti}% (${snapshot.debtHealthStatus === "debt_free" ? "Bebas Hutang" : snapshot.debtHealthStatus === "healthy" ? "Rasio Sehat" : "Perlu Waspada"}).`
+          : `Arus kas ${name} mengalami defisit ${formatCurrency(
+              Math.abs(snapshot.monthlyNet)
+            )} bulan ini karena total pengeluaran (${formatCurrency(
+              snapshot.monthlyExpense
+            )}) melampaui pemasukan, dengan cadangan dana darurat bertahan selama ${runway} bulan.`;
+
+      const keyMetrics = [
+        `Rasio Tabungan: ${savingRate}% ${savingRate >= 20 ? "(✓ Target Sehat ≥20% tercapai)" : "(⚠️ Di bawah target ideal 20%)"}`,
+        `Debt-to-Income (DTI): ${dti}% ${dti === 0 ? "(✓ Bebas Liabilitas)" : dti <= 20 ? "(✓ Beban Hutang Aman ≤20%)" : "(⚠️ Beban Hutang Tinggi)"}`,
+        `Runway Dana Darurat: ${runway} Bulan (${formatCurrency(snapshot.totalBalance)} likuid vs ${formatCurrency(snapshot.monthlyExpense)} beban bulanan)`,
+        topExp ? `Pengeluaran Terbesar: ${topExp.name} (${formatCurrency(topExp.amount)} • ${topExp.percentage}%)` : `Total Net Worth: ${formatCurrency(snapshot.netWorth)}`,
+      ];
+
+      const actionSteps = [
+        isFreelance
+          ? `Alokasikan minimal ${formatCurrency(Math.max(250_000, Math.round(snapshot.monthlyIncome * 0.15)))} ke pos dana darurat untuk memperpanjang buffer runway menuju target ideal 6–12 bulan.`
+          : `Sisihkan minimal ${formatCurrency(Math.max(200_000, Math.round(snapshot.monthlyIncome * 0.2)))} di awal gajian ke pos impian atau instrumen investasi pasar uang.`,
+        topExp
+          ? `Lakukan pembatasan belanja diskresioner pada kategori ${topExp.name} maksimal hemat Rp ${Math.round(topExp.amount * 0.15).toLocaleString("id-ID")} minggu ini.`
+          : `Aktifkan jadwal pencatatan transaksi berulang untuk tagihan listrik & wifi sebelum jatuh tempo.`,
+        snapshot.totalDebts > 0
+          ? `Fokuskan surplus kas Rp ${Math.round(Math.max(100_000, snapshot.monthlyNet * 0.4)).toLocaleString("id-ID")} untuk akselerasi pelunasan sisa pokok hutang (${formatCurrency(snapshot.totalDebts)}).`
+          : `Simulasikan potensi pertumbuhan aset di kalkulator compounding interest dengan asumsi return 6-8%/tahun.`,
+      ];
 
       return {
         status,
         headline,
-        summary: `Total aset bersih saat ini bernilai ${formatCurrency(
-          netWorth
-        )}. Bulan ini mencatatkan pemasukan ${formatCurrency(
-          income
-        )} dan pengeluaran ${formatCurrency(
-          expense
-        )} dengan rasio tabungan ${savingsRate}%.`,
-        keyInsights: [
-          `Arus kas bersih bulan ini: ${netSavings >= 0 ? "+" : ""}${formatCurrency(
-            netSavings
-          )}`,
-          `Rasio tabungan ${savingsRate}% (Standar ideal: minimal 20% dari total pemasukan)`,
-          `Total cadangan aset di seluruh kantong dan dompet: ${formatCurrency(netWorth)}`,
-        ],
-        actionableRecommendations: [
-          savingsRate < 20
-            ? "Tinjau ulang pos pengeluaran sekunder (gaya hidup & jajan) untuk menaikkan rasio tabungan ke target 20%."
-            : "Pertahankan surplus arus kas ini dan alokasikan 50% surplus ke pos dana darurat atau investasi.",
-          "Manfaatkan fitur 'Transaksi Berulang' untuk mengantisipasi tagihan rutin sebelum jatuh tempo.",
-        ],
+        diagnosis,
+        summary: diagnosis,
+        keyMetrics,
+        keyInsights: keyMetrics,
+        actionSteps,
+        actionableRecommendations: actionSteps,
       };
     }
 
     case "wallets": {
-      const totalBalance = (contextData.totalBalance as number) || 0;
-      const walletsCount = (contextData.walletsCount as number) || 0;
-      const wallets = (contextData.wallets as Array<{ name: string; balance: number; type: string }>) || [];
-
-      const topWallet = wallets.length > 0
-        ? [...wallets].sort((a, b) => b.balance - a.balance)[0]
-        : null;
-
-      const topRatio = totalBalance > 0 && topWallet
-        ? Math.round((topWallet.balance / totalBalance) * 100)
-        : 0;
+      const totalBalance = snapshot.totalBalance;
+      const wallets = (extraData.wallets as Array<{ name: string; balance: number; type: string }>) || [];
+      const topWallet = wallets[0] || null;
+      const topRatio = totalBalance > 0 && topWallet ? Math.round((topWallet.balance / totalBalance) * 100) : 0;
 
       let status: AIAnalysisResponse["status"] = "healthy";
-      let headline = "Likuiditas Dompet Terdistribusi Baik";
+      let headline = `Struktur Likuiditas Dompet Terkelola Baik`;
 
-      if (topRatio > 80 && wallets.length > 1) {
-        status = "warning";
-        headline = "Konsentrasi Dana Terlalu Tinggi pada Satu Dompet";
-      } else if (totalBalance <= 0) {
+      if (totalBalance <= 0) {
         status = "critical";
-        headline = "Saldo Likuiditas Sangat Minim";
+        headline = `Saldo Likuiditas Kritis: Buffer Kas Habis`;
+      } else if (topRatio > 85 && wallets.length > 1) {
+        status = "warning";
+        headline = `Konsentrasi Dana Terlalu Bertumpuk pada Satu Dompet`;
       }
+
+      const diagnosis = `Total likuiditas ${name} di ${wallets.length} dompet bernilai ${formatCurrency(totalBalance)}, dengan ${topRatio}% dana terkonsentrasi di dompet "${topWallet?.name || "Utama"}". Buffer ini sanggup menopang operasional selama ${runway} bulan.`;
+
+      const keyMetrics = [
+        `Total Likuiditas Kas: ${formatCurrency(totalBalance)}`,
+        `Kapasitas Runway Kas: ${runway} Bulan terhadap rata-rata pengeluaran bulanan`,
+        `Dompet Dominan: "${topWallet?.name || "Utama"}" (${formatCurrency(topWallet?.balance || 0)} • ${topRatio}%)`,
+      ];
+
+      const actionSteps = [
+        topRatio > 80
+          ? `Pindahkan sebagian saldo sekitar Rp ${Math.round((topWallet?.balance || 0) * 0.3).toLocaleString("id-ID")} ke dompet tabungan terkunci agar terhindar dari belanja impulsif.`
+          : `Jaga saldo dompet operasional harian (E-Wallet) maksimal sebesar ${formatCurrency(Math.max(500_000, Math.round(snapshot.monthlyExpense * 0.25)))}.`,
+        `Tinjau rekonsiliasi saldo fisik dan digital setiap akhir pekan agar buku kas selalu akurat 100%.`,
+      ];
 
       return {
         status,
         headline,
-        summary: `Tercatat ${walletsCount} dompet aktif dengan total likuiditas ${formatCurrency(
-          totalBalance
-        )}. Dompet terbesar adalah "${topWallet?.name || "Utama"}" yang memegang ${topRatio}% dari total likuiditas.`,
-        keyInsights: [
-          `Total dana likuid: ${formatCurrency(totalBalance)}`,
-          `Dompet "${topWallet?.name || "Utama"}" menampung saldo terbesar (${formatCurrency(topWallet?.balance || 0)})`,
-          `Diversifikasi dompet membantu memisahkan dana operasional harian dengan pos tabungan darurat`,
-        ],
-        actionableRecommendations: [
-          topRatio > 70
-            ? "Pertimbangkan menyebar dana likuid ke rekening terpisah agar tidak mudah terpakai untuk belanja impulsif."
-            : "Pastikan saldo di dompet harian (E-Wallet) cukup untuk kebutuhan 1-2 minggu ke depan tanpa berlebihan.",
-          "Gunakan transfer berkala dari rekening payroll ke dompet belanja untuk menjaga disiplin pengeluaran.",
-        ],
+        diagnosis,
+        summary: diagnosis,
+        keyMetrics,
+        keyInsights: keyMetrics,
+        actionSteps,
+        actionableRecommendations: actionSteps,
       };
     }
 
     case "budgets": {
-      const budgets = (contextData.budgets as Array<{ category_name: string; limit_amount: number; spent_amount: number; percentage: number }>) || [];
+      const budgets = (extraData.budgets as Array<{ category_name: string; limit_amount: number; spent_amount: number; percentage: number }>) || [];
       const overBudgets = budgets.filter((b) => b.percentage >= 100);
       const warningBudgets = budgets.filter((b) => b.percentage >= 80 && b.percentage < 100);
 
       let status: AIAnalysisResponse["status"] = "healthy";
-      let headline = "Seluruh Batas Anggaran Terkendali Rapi";
+      let headline = `Pengendalian Anggaran Berjalan Disiplin`;
 
       if (overBudgets.length > 0) {
         status = "critical";
-        headline = `Perhatian: ${overBudgets.length} Kategori Melebihi Batas Anggaran!`;
+        headline = `Peringatan: ${overBudgets.length} Pos Pengeluaran Melampaui Batas!`;
       } else if (warningBudgets.length > 0) {
         status = "warning";
-        headline = `${warningBudgets.length} Kategori Mendekati Limit (>80%)`;
+        headline = `${warningBudgets.length} Pos Anggaran Mendekati Batas Kritis (>80%)`;
       }
+
+      const diagnosis =
+        overBudgets.length > 0
+          ? `Terdapat ${overBudgets.length} pos anggaran yang overbudget bulan ini, dengan serapan terbesar pada kategori ${overBudgets.map((b) => b.category_name).join(", ")}. Diperlukan pengendalian belanja diskresioner segera.`
+          : `Seluruh pos anggaran bulan ini berada dalam koridor aman dengan disiplin belanja yang baik.`;
+
+      const keyMetrics = [
+        `Total Pos Anggaran: ${budgets.length} kategori aktif`,
+        overBudgets.length > 0
+          ? `Pos Overbudget: ${overBudgets.map((b) => `${b.category_name} (${b.percentage}%)`).join(", ")}`
+          : `Status Overbudget: 0 Pos (100% terkontrol)`,
+        warningBudgets.length > 0
+          ? `Pos Waspada (80-99%): ${warningBudgets.map((b) => `${b.category_name} (${b.percentage}%)`).join(", ")}`
+          : `Status Waspada: Seluruh pos di bawah batas aman`,
+      ];
+
+      const actionSteps = [
+        overBudgets.length > 0
+          ? `Tahan pengeluaran diskresioner pada kategori overbudget hingga awal periode bulan depan.`
+          : `Pertahankan ritme belanja saat ini dan alokasikan selisih sisa limit anggaran ke pos impian.`,
+        `Evaluasi limit anggaran kategori yang rutin overbudget lebih dari 2 bulan berturut-turut.`,
+      ];
 
       return {
         status,
         headline,
-        summary: `Dari total ${budgets.length} pos anggaran yang dipantau bulan ini, ${overBudgets.length} pos mengalami overbudget dan ${warningBudgets.length} pos dalam status waspada.`,
-        keyInsights: [
-          overBudgets.length > 0
-            ? `Pos overbudget: ${overBudgets.map((b) => `${b.category_name} (${b.percentage}%)`).join(", ")}`
-            : "Tidak ada pos anggaran yang terlampaui bulan ini",
-          warningBudgets.length > 0
-            ? `Pos waspada (>80%): ${warningBudgets.map((b) => `${b.category_name} (${b.percentage}%)`).join(", ")}`
-            : "Rata-rata serapan anggaran berada dalam batas aman",
-        ],
-        actionableRecommendations: [
-          overBudgets.length > 0
-            ? "Tahan pengeluaran diskresioner pada kategori yang overbudget hingga awal periode bulan depan."
-            : "Lanjutkan pola disiplin belanja saat ini untuk mempertahankan ruang tabungan.",
-          "Jika ada kategori yang konsisten overbudget setiap bulan, lakukan evaluasi dan sesuaikan limit realistisnya.",
-        ],
+        diagnosis,
+        summary: diagnosis,
+        keyMetrics,
+        keyInsights: keyMetrics,
+        actionSteps,
+        actionableRecommendations: actionSteps,
       };
     }
 
     case "savings": {
-      const goals = (contextData.goals as Array<{ name: string; current_amount: number; target_amount: number; is_completed: boolean }>) || [];
-      const totalCurrent = (contextData.totalCurrent as number) || 0;
-      const totalTarget = (contextData.totalTarget as number) || 0;
+      const goals = (extraData.goals as Array<{ name: string; current_amount: number; target_amount: number; is_completed: boolean }>) || [];
+      const totalCurrent = (extraData.totalCurrent as number) || 0;
+      const totalTarget = (extraData.totalTarget as number) || 0;
       const completedCount = goals.filter((g) => g.is_completed).length;
       const overallPercent = totalTarget > 0 ? Math.round((totalCurrent / totalTarget) * 100) : 0;
 
       let status: AIAnalysisResponse["status"] = "healthy";
-      let headline = "Progres Target Impian Berjalan Konsisten";
+      let headline = `Progres Tabungan Impian Berjalan Konsisten`;
 
-      if (overallPercent < 25 && goals.length > 0) {
+      if (overallPercent < 20 && goals.length > 0) {
         status = "warning";
-        headline = "Progres Tabungan Masih di Tahap Awal";
+        headline = `Progres Akumulasi Tabungan Masih Tahap Awal`;
       }
+
+      const diagnosis = `Akumulasi tabungan ${name} mencapai ${formatCurrency(totalCurrent)} (${overallPercent}%) dari target impian keseluruhan ${formatCurrency(totalTarget)}. Sebanyak ${completedCount} dari ${goals.length} target telah terpenuhi.`;
+
+      const keyMetrics = [
+        `Total Terkumpul: ${formatCurrency(totalCurrent)} dari target ${formatCurrency(totalTarget)} (${overallPercent}%)`,
+        `Target Selesai: ${completedCount} dari ${goals.length} pos impian`,
+        `Kekurangan Menuju Target: ${formatCurrency(Math.max(0, totalTarget - totalCurrent))}`,
+      ];
+
+      const actionSteps = [
+        `Otomatisasi setoran minimal ${formatCurrency(Math.max(150_000, Math.round(snapshot.monthlyIncome * 0.1)))} ke pos impian prioritas tertinggi setiap tanggal gajian.`,
+        `Gunakan simulasi kalkulator bunga majemuk untuk mengukur horizon waktu pencapaian target tabungan.`,
+      ];
 
       return {
         status,
         headline,
-        summary: `Akumulasi tabungan mencapai ${formatCurrency(
-          totalCurrent
-        )} (${overallPercent}%) dari target impian keseluruhan ${formatCurrency(
-          totalTarget
-        )}. Sebanyak ${completedCount} dari ${goals.length} target telah terpenuhi.`,
-        keyInsights: [
-          `Capaian tabungan global: ${overallPercent}% dari total komitmen`,
-          `${completedCount} pos impian sudah tercapai 100%`,
-          `Kekurangan dana menuju target: ${formatCurrency(Math.max(0, totalTarget - totalCurrent))}`,
-        ],
-        actionableRecommendations: [
-          "Gunakan fitur 'Tabungan Bersama' untuk pos impian patungan bersama pasangan atau keluarga.",
-          "Jadwalkan auto-debit atau mutasi otomatis ke pos impian setiap kali menerima gaji atau bonus bulanan.",
-          "Simulasikan pertumbuhan dana jangka panjang menggunakan modul Kalkulator Compounding Interest.",
-        ],
+        diagnosis,
+        summary: diagnosis,
+        keyMetrics,
+        keyInsights: keyMetrics,
+        actionSteps,
+        actionableRecommendations: actionSteps,
       };
     }
 
     case "transactions": {
-      const totalVolume = (contextData.totalVolume as number) || 0;
-      const txCount = (contextData.txCount as number) || 0;
-      const topCategory = (contextData.topCategory as string) || "Kebutuhan";
+      const txCount = (extraData.txCount as number) || 0;
+      const totalVolume = (extraData.totalVolume as number) || 0;
+      const topCatName = (extraData.topCategory as string) || "Kebutuhan";
+
+      const diagnosis = `Pencatatan mutasi ${name} sangat aktif dengan ${txCount} transaksi tercatat dalam 30 hari terakhir (total perputaran ${formatCurrency(totalVolume)}), didominasi oleh kategori "${topCatName}".`;
+
+      const keyMetrics = [
+        `Aktivitas Mutasi: ${txCount} transaksi dalam 30 hari terakhir`,
+        `Total Perputaran Arus Kas: ${formatCurrency(totalVolume)}`,
+        `Kategori Pengeluaran Dominan: ${topCatName}`,
+      ];
+
+      const actionSteps = [
+        `Gunakan fitur Voice Input (Input Suara) untuk mencatat pengeluaran harian < 5 detik langsung setelah transaksi.`,
+        `Periksa daftar langganan berulang bulanan untuk memutus tagihan yang sudah tidak aktif digunakan.`,
+      ];
 
       return {
         status: "healthy",
-        headline: "Aktivitas Pencatatan Mutasi Sangat Aktif",
-        summary: `Tercatat ${txCount} mutasi dalam 30 hari terakhir dengan total perputaran dana ${formatCurrency(
-          totalVolume
-        )}. Kategori transaksi yang paling dominan adalah "${topCategory}".`,
-        keyInsights: [
-          `Frekuensi transaksi: rata-rata ${(txCount / 30).toFixed(1)} mutasi per hari`,
-          `Pengeluaran terbesar terkonsentrasi pada sektor ${topCategory}`,
-          `Pencatatan yang konsisten memberikan presisi prediksi arus kas masa depan`,
-        ],
-        actionableRecommendations: [
-          "Gunakan fitur 'AI Quick Scan' untuk mencatat struk belanja fisik secara instan tanpa input manual.",
-          "Periksa daftar transaksi berulang secara berkala untuk membatalkan langganan aplikasi yang sudah tidak terpakai.",
-        ],
+        headline: `Disiplin Pencatatan Buku Kas Sangat Baik`,
+        diagnosis,
+        summary: diagnosis,
+        keyMetrics,
+        keyInsights: keyMetrics,
+        actionSteps,
+        actionableRecommendations: actionSteps,
       };
     }
   }
@@ -224,81 +297,142 @@ export async function getModuleAIAnalysis(
     const user = await getCurrentUser();
     const period = await getCurrentPeriod();
 
-    let contextData: Record<string, unknown> = {};
-    let contextPromptSummary = "";
+    // 1. Fetch User Profile Context
+    const profile = await getUserProfile();
 
-    // 1. Gather context data per module type
-    if (moduleType === "dashboard") {
-      const [walletRows, txMonthlyRows, trendRows] = await Promise.all([
-        sql`
-          SELECT COALESCE(SUM(balance), 0) AS net_worth
-          FROM wallets
-          WHERE user_id = ${user.id} AND deleted_at IS NULL
-        `,
-        sql`
-          SELECT
-            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS monthly_income,
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount + admin_fee ELSE 0 END), 0) AS monthly_expense
-          FROM transactions
-          WHERE user_id = ${user.id}
-            AND deleted_at IS NULL
-            AND to_char(transaction_date, 'YYYY-MM') = ${period}
-        `,
-        sql`
-          SELECT 
-            to_char(transaction_date, 'YYYY-MM') AS period,
-            COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS income,
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount + admin_fee ELSE 0 END), 0) AS expense
-          FROM transactions
-          WHERE user_id = ${user.id}
-            AND deleted_at IS NULL
-            AND transaction_date >= now() - interval '6 months'
-          GROUP BY to_char(transaction_date, 'YYYY-MM')
-          ORDER BY period ASC
-        `,
-      ]);
-
-      const netWorth = Number(walletRows[0]?.net_worth || 0);
-      const monthlyIncome = Number(txMonthlyRows[0]?.monthly_income || 0);
-      const monthlyExpense = Number(txMonthlyRows[0]?.monthly_expense || 0);
-
-      contextData = {
-        netWorth,
-        monthlyIncome,
-        monthlyExpense,
-        trend: trendRows,
-      };
-
-      contextPromptSummary = `
-- Total Net Worth (Saldo Dompet): ${formatCurrency(netWorth)}
-- Pemasukan Bulan Ini: ${formatCurrency(monthlyIncome)}
-- Pengeluaran Bulan Ini: ${formatCurrency(monthlyExpense)}
-- Arus Kas Bersih Bulan Ini: ${formatCurrency(monthlyIncome - monthlyExpense)}
-- Riwayat Tren 6 Bulan: ${JSON.stringify(trendRows)}
-`;
-    } else if (moduleType === "wallets") {
-      const wallets = await sql`
+    // 2. Query Comprehensive Financial Snapshot
+    const [
+      walletRows,
+      savingsRows,
+      debtRows,
+      monthlyIncomeRows,
+      monthlyExpenseRows,
+      categoryExpenseRows,
+    ] = await Promise.all([
+      sql`
         SELECT id, name, type, balance, color
         FROM wallets
         WHERE user_id = ${user.id} AND deleted_at IS NULL
         ORDER BY balance DESC
-      `;
+      `,
+      sql`
+        SELECT id, name, target_amount, current_amount, target_date::text, is_completed
+        FROM savings_goals
+        WHERE user_id = ${user.id} AND deleted_at IS NULL
+      `,
+      sql`
+        SELECT COALESCE(SUM(remaining_amount), 0) AS total_debts
+        FROM debts
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND type = 'debt'
+          AND status != 'paid'
+      `,
+      sql`
+        SELECT COALESCE(SUM(amount), 0) AS total_income
+        FROM transactions
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND type = 'income'
+          AND to_char(transaction_date, 'YYYY-MM') = ${period}
+      `,
+      sql`
+        SELECT COALESCE(SUM(amount + admin_fee), 0) AS total_expense
+        FROM transactions
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND type = 'expense'
+          AND to_char(transaction_date, 'YYYY-MM') = ${period}
+      `,
+      sql`
+        SELECT c.name, COALESCE(SUM(t.amount + t.admin_fee), 0) AS amount
+        FROM transactions t
+        JOIN categories c ON c.id = t.category_id
+        WHERE t.user_id = ${user.id}
+          AND t.deleted_at IS NULL
+          AND t.type = 'expense'
+          AND to_char(t.transaction_date, 'YYYY-MM') = ${period}
+        GROUP BY c.name
+        ORDER BY amount DESC
+        LIMIT 3
+      `,
+    ]);
 
-      const totalBalance = wallets.reduce((acc, w) => acc + Number(w.balance), 0);
-      contextData = {
-        totalBalance,
-        walletsCount: wallets.length,
-        wallets: wallets.map((w) => ({
-          name: w.name,
-          type: w.type,
-          balance: Number(w.balance),
-        })),
+    const totalBalance = walletRows.reduce((acc, w) => acc + Number(w.balance), 0);
+    const totalSavings = savingsRows.reduce((acc, g) => acc + Number(g.current_amount), 0);
+    const totalDebts = Number(debtRows[0]?.total_debts || 0);
+    const netWorth = (totalBalance + totalSavings) - totalDebts;
+
+    const monthlyIncome = Number(monthlyIncomeRows[0]?.total_income || 0);
+    const monthlyExpense = Number(monthlyExpenseRows[0]?.total_expense || 0);
+    const monthlyNet = monthlyIncome - monthlyExpense;
+
+    const savingRate =
+      monthlyIncome > 0 ? Math.round((monthlyNet / monthlyIncome) * 100) : 0;
+    const emergencyRunwayMonths =
+      monthlyExpense > 0 ? Number((totalBalance / monthlyExpense).toFixed(1)) : 0;
+
+    const debtToIncomeRatio =
+      monthlyIncome > 0
+        ? Math.round((totalDebts / monthlyIncome) * 100)
+        : totalDebts > 0
+        ? 100
+        : 0;
+
+    let debtHealthStatus: FinancialProfileSnapshot["debtHealthStatus"] = "debt_free";
+    if (totalDebts === 0) {
+      debtHealthStatus = "debt_free";
+    } else if (debtToIncomeRatio <= 20) {
+      debtHealthStatus = "healthy";
+    } else if (debtToIncomeRatio <= 40) {
+      debtHealthStatus = "moderate";
+    } else {
+      debtHealthStatus = "critical";
+    }
+
+    const topExpenses = categoryExpenseRows.map((r) => {
+      const amt = Number(r.amount);
+      return {
+        name: r.name as string,
+        amount: amt,
+        percentage: monthlyExpense > 0 ? Math.round((amt / monthlyExpense) * 100) : 0,
       };
+    });
 
-      contextPromptSummary = `
-- Total Saldo di Seluruh Dompet: ${formatCurrency(totalBalance)}
-- Rincian Dompet (${wallets.length} dompet): ${JSON.stringify(contextData.wallets)}
-`;
+    const snapshot: FinancialProfileSnapshot = {
+      name: profile.name || "Pengguna",
+      age: profile.age ?? null,
+      occupation: profile.occupation ?? null,
+      netWorth,
+      totalBalance,
+      totalSavings,
+      totalDebts,
+      totalReceivables: 0,
+      monthlyIncome,
+      monthlyExpense,
+      monthlyNet,
+      savingRate,
+      emergencyRunwayMonths,
+      debtToIncomeRatio,
+      debtHealthStatus,
+      topExpenses,
+    };
+
+    // 3. Gather Module-Specific Extra Context
+    let extraData: Record<string, unknown> = {};
+    let moduleSpecificPrompt = "";
+
+    if (moduleType === "dashboard") {
+      extraData = {
+        wallets: walletRows.map((w) => ({ name: w.name, balance: Number(w.balance), type: w.type })),
+        goals: savingsRows.map((g) => ({ name: g.name, current: Number(g.current_amount), target: Number(g.target_amount) })),
+      };
+      moduleSpecificPrompt = `Fokus evaluasi: Gambaran besar kesehatan finansial, neraca aset bersih vs hutang, dan laju pertumbuhan kekayaan.`;
+    } else if (moduleType === "wallets") {
+      extraData = {
+        wallets: walletRows.map((w) => ({ name: w.name, balance: Number(w.balance), type: w.type })),
+      };
+      moduleSpecificPrompt = `Fokus evaluasi: Distribusi likuiditas kas antar dompet, keamanan dana darurat, dan risiko konsentrasi dana.`;
     } else if (moduleType === "budgets") {
       const budgetRows = await sql`
         SELECT 
@@ -306,7 +440,7 @@ export async function getModuleAIAnalysis(
           b.category_id,
           b.limit_amount,
           c.name AS category_name,
-          COALESCE(SUM(t.amount), 0) AS spent_amount
+          COALESCE(SUM(t.amount + t.admin_fee), 0) AS spent_amount
         FROM budgets b
         JOIN categories c ON c.id = b.category_id
         LEFT JOIN transactions t ON t.category_id = b.category_id 
@@ -322,32 +456,21 @@ export async function getModuleAIAnalysis(
       const budgets = budgetRows.map((b) => {
         const limit = Number(b.limit_amount);
         const spent = Number(b.spent_amount);
-        const percentage = limit > 0 ? Math.round((spent / limit) * 100) : 0;
         return {
           category_name: b.category_name as string,
           limit_amount: limit,
           spent_amount: spent,
-          percentage,
+          percentage: limit > 0 ? Math.round((spent / limit) * 100) : 0,
         };
       });
 
-      contextData = { budgets, period };
-      contextPromptSummary = `
-- Periode Anggaran: ${period}
-- Rincian Anggaran Kategori: ${JSON.stringify(budgets)}
-`;
+      extraData = { budgets, period };
+      moduleSpecificPrompt = `Fokus evaluasi: Kepatuhan serapan anggaran kategori, mitigasi overbudget, dan efisiensi pengeluaran diskresioner. Rincian anggaran: ${JSON.stringify(budgets)}`;
     } else if (moduleType === "savings") {
-      const goals = await sql`
-        SELECT id, name, target_amount, current_amount, target_date::text, is_completed
-        FROM savings_goals
-        WHERE user_id = ${user.id} AND deleted_at IS NULL
-      `;
-
-      const totalCurrent = goals.reduce((acc, g) => acc + Number(g.current_amount), 0);
-      const totalTarget = goals.reduce((acc, g) => acc + Number(g.target_amount), 0);
-
-      contextData = {
-        goals: goals.map((g) => ({
+      const totalCurrent = savingsRows.reduce((acc, g) => acc + Number(g.current_amount), 0);
+      const totalTarget = savingsRows.reduce((acc, g) => acc + Number(g.target_amount), 0);
+      extraData = {
+        goals: savingsRows.map((g) => ({
           name: g.name,
           current_amount: Number(g.current_amount),
           target_amount: Number(g.target_amount),
@@ -356,57 +479,29 @@ export async function getModuleAIAnalysis(
         totalCurrent,
         totalTarget,
       };
-
-      contextPromptSummary = `
-- Total Tabungan Terkumpul: ${formatCurrency(totalCurrent)}
-- Total Target Finansial: ${formatCurrency(totalTarget)}
-- Daftar Pos Impian: ${JSON.stringify(contextData.goals)}
-`;
+      moduleSpecificPrompt = `Fokus evaluasi: Progres pos impian, horizon waktu pencapaian target tabungan bersama dan pribadi. Rincian target: ${JSON.stringify(extraData.goals)}`;
     } else if (moduleType === "transactions") {
-      const [txStats, topCategories] = await Promise.all([
-        sql`
-          SELECT 
-            COUNT(*) AS total_count,
-            COALESCE(SUM(amount), 0) AS total_volume,
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
-          FROM transactions
-          WHERE user_id = ${user.id}
-            AND deleted_at IS NULL
-            AND transaction_date >= now() - interval '30 days'
-        `,
-        sql`
-          SELECT c.name, COALESCE(SUM(t.amount), 0) AS amount
-          FROM transactions t
-          JOIN categories c ON c.id = t.category_id
-          WHERE t.user_id = ${user.id}
-            AND t.deleted_at IS NULL
-            AND t.type = 'expense'
-            AND t.transaction_date >= now() - interval '30 days'
-          GROUP BY c.name
-          ORDER BY amount DESC
-          LIMIT 3
-        `,
-      ]);
-
+      const txStats = await sql`
+        SELECT 
+          COUNT(*) AS total_count,
+          COALESCE(SUM(amount), 0) AS total_volume
+        FROM transactions
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND transaction_date >= now() - interval '30 days'
+      `;
       const txCount = Number(txStats[0]?.total_count || 0);
       const totalVolume = Number(txStats[0]?.total_volume || 0);
-      const topCatName = (topCategories[0]?.name as string) || "Kebutuhan";
 
-      contextData = {
+      extraData = {
         txCount,
         totalVolume,
-        topCategory: topCatName,
-        topCategories,
+        topCategory: topExpenses[0]?.name || "Kebutuhan",
       };
-
-      contextPromptSummary = `
-- Jumlah Mutasi 30 Hari Terakhir: ${txCount} transaksi
-- Total Perputaran Dana 30 Hari: ${formatCurrency(totalVolume)}
-- Top Kategori Pengeluaran 30 Hari: ${JSON.stringify(topCategories)}
-`;
+      moduleSpecificPrompt = `Fokus evaluasi: Kebiasaan pencatatan mutasi harian, volume perputaran dana, dan deteksi kebocoran halus pada pengeluaran mikro.`;
     }
 
-    // 2. Call Google Gemini API if configured
+    // 4. Call Google Gemini API with Dynamic Prompting
     const apiKey =
       process.env.GEMINI_API_KEY ||
       process.env.AI_GATEWAY_API_KEY ||
@@ -414,83 +509,123 @@ export async function getModuleAIAnalysis(
 
     if (apiKey) {
       try {
-        const systemPrompt = `Kamu adalah Senior Financial Advisor & Certified Financial Planner (CFP) di Pintar Finance.
-Tugasmu adalah menganalisis data keuangan pengguna pada modul "${moduleType}" dan memberikan evaluasi tajam, actionable, dan bernada positif-konstruktif dalam bahasa Indonesia.
+        const dynamicSystemPrompt = `Kamu adalah Senior Certified Financial Planner (CFP) di Pintar Finance.
+Tugasmu adalah menganalisis data keuangan pengguna secara dinamis dan personal, bebas dari saran klise hardcoded.
 
-Konteks Finansial Nyata Pengguna:
-${contextPromptSummary}
+PROFIL PENGGUNA:
+- Nama: ${snapshot.name}
+- Usia: ${snapshot.age ? `${snapshot.age} tahun` : "Dewasa Muda"}
+- Profesi/Pekerjaan: ${snapshot.occupation || "Pekerja Profesional"}
 
-KEMBALIKAN HANYA OBJEK JSON MURNI SESUAI SCHEMA BERIKUT (TANPA MARKDOWN DAN TANPA BACKTICKS):
+SNAPSHOT METRIK FINANSIAL NYATA PENGGUNA:
+- Total Net Worth (Aset Bersih): ${formatCurrency(snapshot.netWorth)}
+- Likuiditas Kas di Dompet: ${formatCurrency(snapshot.totalBalance)}
+- Dana Terkunci di Pos Impian: ${formatCurrency(snapshot.totalSavings)}
+- Sisa Pokok Hutang/Liabilitas: ${formatCurrency(snapshot.totalDebts)}
+- Pemasukan Bulan Ini (${period}): ${formatCurrency(snapshot.monthlyIncome)}
+- Pengeluaran Bulan Ini (${period}): ${formatCurrency(snapshot.monthlyExpense)}
+- Arus Kas Bersih: ${formatCurrency(snapshot.monthlyNet)}
+- Saving Rate: ${snapshot.savingRate}%
+- Runway Dana Darurat: ${snapshot.emergencyRunwayMonths} Bulan
+- Rasio Debt-to-Income (DTI): ${snapshot.debtToIncomeRatio}% (Status: ${snapshot.debtHealthStatus})
+- Top 3 Pengeluaran: ${snapshot.topExpenses.map((e) => `${e.name} (${formatCurrency(e.amount)} • ${e.percentage}%)`).join(", ") || "Belum ada transaksi"}
+
+${moduleSpecificPrompt}
+
+PANDUAN PENALARAN KONTEKSTUAL (DYNAMIC REASONING):
+1. Penalaran Profesi:
+   - Jika Pekerja Lepas / Freelancer / Wirausaha / Bisnis: Soroti manajemen volatilitas arus kas, perpanjangan buffer dana darurat (target 6-12 bulan), dan pemisahan dana operasional vs pribadi.
+   - Jika Karyawan Tetap / PNS / BUMN: Arahkan pada optimasi anggaran 50/30/20, percepatan pelunasan hutang, dan investasi rutin otomatis saat tanggal gajian.
+   - Jika Mahasiswa / Fresh Graduate: Fokus pada pembentukan kebiasaan mencatat, membangun dana darurat pertama, menghindari pinjol/paylater, dan upskilling.
+2. Penyesuaian Nada & Usia:
+   - Usia < 25 th: Nada bersahabat, energik, memotivasi kebiasaan berinvestasi sejak dini.
+   - Usia 25 - 40 th: Nada strategis, berorientasi target masa depan (rumah, keluarga, akselerasi aset).
+   - Usia > 40 th: Nada matang, fokus pada pelunasan hutang, dana pensiun, dan proteksi kekayaan.
+3. Evaluasi Berbasis Angka Nyata: Selalu sebutkan nominal rupiah riil, persentase saving rate, rasio DTI, dan bulan runway pengguna dalam analisis.
+
+STRUKTUR OUTPUT WAJIB 3 BAGIAN:
+KEMBALIKAN HANYA JSON MURNI SESUAI SCHEMA:
 {
   "status": "healthy" | "warning" | "critical",
-  "headline": string (Judul singkat yang menarik dan profesional, maksimal 12 kata),
-  "summary": string (Ringkasan analisis 2-3 kalimat yang mengutip data angka rupiah spesifik),
-  "keyInsights": string[] (Array berisi 3 poin temuan analitis mendalam),
-  "actionableRecommendations": string[] (Array berisi 2-3 langkah nyata yang bisa segera dilakukan pengguna)
+  "headline": string (Judul tajam & profesional, maksimal 12 kata),
+  "diagnosis": string (BAGIAN 1: Diagnosis Singkat dalam 1-2 kalimat mengevaluasi arus kas dan beban hutang dengan angka riil),
+  "keyMetrics": string[] (BAGIAN 2: 3-4 butir Sorotan Metrik Utama yang memuat angka rupiah, %, dan status kesehatannya),
+  "actionSteps": string[] (BAGIAN 3: 2-3 Langkah Aksi Konkret terukur dengan estimasi nominal rupiah spesifik untuk dieksekusi minggu ini)
 }`;
 
-      const candidateModels = [
-        "gemini-flash-lite-latest",
-        "gemini-3.1-flash-lite",
-        "gemini-3.5-flash-lite",
-        "gemini-flash-latest",
-      ];
+        const candidateModels = [
+          "gemini-flash-lite-latest",
+          "gemini-3.1-flash-lite",
+          "gemini-3.5-flash-lite",
+          "gemini-flash-latest",
+        ];
 
-      for (const modelName of candidateModels) {
-        try {
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [{ text: systemPrompt }],
+        for (const modelName of candidateModels) {
+          try {
+            const response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: dynamicSystemPrompt }] }],
+                  generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0.2,
                   },
-                ],
-                generationConfig: {
-                  responseMimeType: "application/json",
-                  temperature: 0.2,
-                },
-              }),
-            }
-          );
+                }),
+              }
+            );
 
-          if (response.ok) {
-            const resData = await response.json();
-            const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (rawText) {
-              const parsed = JSON.parse(rawText) as AIAnalysisResponse;
-              if (parsed.status && parsed.headline && parsed.summary) {
-                return {
-                  success: true,
-                  data: {
-                    status: parsed.status,
-                    headline: parsed.headline,
-                    summary: parsed.summary,
-                    keyInsights: Array.isArray(parsed.keyInsights) ? parsed.keyInsights : [],
-                    actionableRecommendations: Array.isArray(parsed.actionableRecommendations) ? parsed.actionableRecommendations : [],
-                    usedModel: modelName,
-                  },
-                };
+            if (response.ok) {
+              const resData = await response.json();
+              const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (rawText) {
+                const parsed = JSON.parse(rawText);
+                const diagnosisText = parsed.diagnosis || parsed.summary || "";
+                const keyMetricsArray = Array.isArray(parsed.keyMetrics)
+                  ? parsed.keyMetrics
+                  : Array.isArray(parsed.keyInsights)
+                  ? parsed.keyInsights
+                  : [];
+                const actionStepsArray = Array.isArray(parsed.actionSteps)
+                  ? parsed.actionSteps
+                  : Array.isArray(parsed.actionableRecommendations)
+                  ? parsed.actionableRecommendations
+                  : [];
+
+                if (parsed.status && parsed.headline && diagnosisText) {
+                  return {
+                    success: true,
+                    data: {
+                      status: parsed.status,
+                      headline: parsed.headline,
+                      diagnosis: diagnosisText,
+                      summary: diagnosisText,
+                      keyMetrics: keyMetricsArray,
+                      keyInsights: keyMetricsArray,
+                      actionSteps: actionStepsArray,
+                      actionableRecommendations: actionStepsArray,
+                      usedModel: modelName,
+                    },
+                  };
+                }
               }
             }
+          } catch {
+            // try next model
           }
-        } catch {
-          // Try next model
         }
-      }
       } catch (geminiError) {
-        console.warn("Gemini API call failed, using intelligent rule-based evaluator:", geminiError);
+        console.warn("Gemini API call failed, using dynamic CFP rule engine:", geminiError);
       }
     }
 
-    // 3. Resilient Fallback Engine
-    const fallbackData = generateFallbackAnalysis(moduleType, contextData);
+    // 5. Intelligent Dynamic Fallback Engine
+    const fallback = generateFallbackAnalysis(moduleType, snapshot, extraData);
     return {
       success: true,
-      data: fallbackData,
+      data: fallback,
     };
   } catch (error) {
     console.error("Error executing getModuleAIAnalysis:", error);
