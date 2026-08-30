@@ -14,7 +14,9 @@ import {
   PanelLeftOpen,
   PiggyBank,
   Receipt,
+  Scale,
   Sparkles,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -35,6 +37,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/wallets",      label: "Dompet",           icon: CreditCard                         },
   { href: "/transactions", label: "Transaksi",        icon: Receipt                            },
   { href: "/savings",      label: "Tabungan Impian",  icon: PiggyBank                          },
+  { href: "/debts",        label: "Hutang & Piutang", icon: Scale                              },
+  { href: "/categories",   label: "Kategori",         icon: Tag                                },
   { href: "/calculator",   label: "Kalkulator Bunga", icon: Calculator                         },
   { href: "/ai",           label: "AI Quick Scan",    icon: Sparkles,      badge: "Beta"       },
 ];

@@ -42,8 +42,22 @@ export interface Category {
   type: CategoryType;
   icon: string;
   color: string;
+  is_default?: boolean;
+  is_synced?: boolean;
+  transaction_count?: number;
   created_at: string;
 }
+
+export const categorySchema = z.object({
+  name: z.string().min(1, "Nama kategori wajib diisi").max(100, "Maksimal 100 karakter"),
+  type: z.enum(["expense", "income"], {
+    message: "Pilih tipe kategori yang valid",
+  }),
+  color: z.string().default("#10b981"),
+  icon: z.string().default("tag"),
+});
+
+export type CategoryInput = z.infer<typeof categorySchema>;
 
 // ─── Savings Goal Types & Schemas ────────────────────────────────────────────
 
@@ -307,6 +321,109 @@ export const budgetSchema = z.object({
 
 export type BudgetInput = z.infer<typeof budgetSchema>;
 
+// ─── Debts & Liabilities Types & Schemas ─────────────────────────────────────
+
+export type DebtType = "debt" | "receivable"; // "debt" = Hutang Saya (Payable), "receivable" = Piutang (Receivable)
+export type DebtStatus = "unpaid" | "partial" | "paid";
+
+export interface Debt {
+  id: string;
+  user_id: string;
+  type: DebtType;
+  counterparty_name: string;
+  title: string;
+  total_amount: number;
+  remaining_amount: number;
+  due_date: string | null;
+  status: DebtStatus;
+  wallet_id: string | null;
+  notes: string | null;
+  is_synced?: boolean;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+
+  // Joined fields for rich UI
+  wallet_name?: string;
+  wallet_icon?: string;
+  wallet_color?: string;
+}
+
+export const debtSchema = z.object({
+  type: z.enum(["debt", "receivable"], {
+    message: "Pilih tipe: Hutang Saya atau Piutang",
+  }),
+  counterparty_name: z
+    .string()
+    .min(1, "Nama pihak/orang/lembaga wajib diisi")
+    .max(100, "Maksimal 100 karakter"),
+  title: z
+    .string()
+    .min(1, "Judul / keterangan hutang wajib diisi")
+    .max(150, "Maksimal 150 karakter"),
+  total_amount: z.coerce.number().min(100, "Nominal minimal Rp 100"),
+  remaining_amount: z.coerce.number().min(0, "Sisa nominal tidak boleh negatif").optional(),
+  due_date: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+  wallet_id: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+  notes: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+});
+
+export type DebtInput = z.infer<typeof debtSchema>;
+
+export const payDebtSchema = z.object({
+  debt_id: z.string().min(1, "ID hutang/piutang wajib diisi"),
+  amount: z.coerce.number().min(100, "Nominal pembayaran minimal Rp 100"),
+  wallet_id: z.string().min(1, "Pilih dompet untuk transaksi pembayaran"),
+  transaction_date: z.string().min(1, "Tanggal pembayaran wajib diisi"),
+  notes: z.string().nullable().optional(),
+});
+
+export type PayDebtInput = z.infer<typeof payDebtSchema>;
+
+// ─── User Profile Types & Schemas ────────────────────────────────────────────
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string | null;
+  occupation?: string | null;
+  birth_date?: string | null;
+  age?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const userProfileSchema = z.object({
+  name: z.string().min(1, "Nama lengkap wajib diisi").max(100, "Maksimal 100 karakter"),
+  avatar_url: z.string().nullable().optional(),
+  occupation: z
+    .string()
+    .max(100, "Maksimal 100 karakter")
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+  birth_date: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+});
+
+export type UserProfileInput = z.infer<typeof userProfileSchema>;
+
 // ─── Analytics Types ─────────────────────────────────────────────────────────
 
 export interface MonthlyCashflowTrend {
@@ -329,6 +446,8 @@ export interface CategoryExpenseBreakdown {
 export interface DashboardAnalytics {
   totalBalance: number;
   totalSavings: number;
+  totalDebts: number;
+  totalReceivables: number;
   netWorth: number;
   savingsRatio: number;
   monthlyIncome: number;
@@ -337,6 +456,7 @@ export interface DashboardAnalytics {
   cashflowTrend: MonthlyCashflowTrend[];
   categoryBreakdown: CategoryExpenseBreakdown[];
   topSavingsGoals: SavingsGoal[];
+  topDebts?: Debt[];
   recentTransactions: Transaction[];
   currentPeriod: string;
 }

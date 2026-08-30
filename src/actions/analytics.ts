@@ -67,6 +67,9 @@ export async function getDashboardAnalytics(
       categoryExpenseRows,
       trendRows,
       recentTransactions,
+      debtRows,
+      receivableRows,
+      topDebtRows,
     ] = await Promise.all([
       // 1. Total liquid balance
       sql`
@@ -158,13 +161,50 @@ export async function getDashboardAnalytics(
       `,
       // 8. Recent 5 Transactions
       getTransactions({ limit: 5 }),
+      // 9. Total active debts (Liabilities)
+      sql`
+        SELECT COALESCE(SUM(remaining_amount), 0) AS total_debts
+        FROM debts
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND type = 'debt'
+          AND status != 'paid'
+      `,
+      // 10. Total active receivables
+      sql`
+        SELECT COALESCE(SUM(remaining_amount), 0) AS total_receivables
+        FROM debts
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND type = 'receivable'
+          AND status != 'paid'
+      `,
+      // 11. Top active debts
+      sql`
+        SELECT 
+          id, user_id, type, counterparty_name, title,
+          total_amount, remaining_amount, due_date::text,
+          status, wallet_id, notes, created_at::text, updated_at::text
+        FROM debts
+        WHERE user_id = ${user.id}
+          AND deleted_at IS NULL
+          AND type = 'debt'
+          AND status != 'paid'
+        ORDER BY remaining_amount DESC
+        LIMIT 3
+      `,
     ]);
 
     const totalBalance = Number(walletRows[0]?.total_balance || 0);
     const totalSavings = Number(savingsRows[0]?.total_savings || 0);
-    const netWorth = totalBalance + totalSavings;
+    const totalDebts = Number(debtRows[0]?.total_debts || 0);
+    const totalReceivables = Number(receivableRows[0]?.total_receivables || 0);
+
+    // Standard Net Worth Formula: Total Assets (Liquidity + Locked Savings) - Total Liabilities (Remaining Debts)
+    const netWorth = (totalBalance + totalSavings) - totalDebts;
+    const grossAssets = totalBalance + totalSavings;
     const savingsRatio =
-      netWorth > 0 ? Math.round((totalSavings / netWorth) * 100) : 0;
+      grossAssets > 0 ? Math.round((totalSavings / grossAssets) * 100) : 0;
 
     const monthlyIncome = Number(monthlyIncomeRows[0]?.total_income || 0);
     const monthlyExpense = Number(monthlyExpenseRows[0]?.total_expense || 0);
@@ -231,9 +271,28 @@ export async function getDashboardAnalytics(
       deleted_at: r.deleted_at as string | null,
     }));
 
+    const topDebts: any[] = topDebtRows.map((r) => ({
+      id: r.id as string,
+      user_id: r.user_id as string,
+      type: r.type as "debt" | "receivable",
+      counterparty_name: r.counterparty_name as string,
+      title: r.title as string,
+      total_amount: Number(r.total_amount),
+      remaining_amount: Number(r.remaining_amount),
+      due_date: r.due_date as string | null,
+      status: r.status as any,
+      wallet_id: r.wallet_id as string | null,
+      notes: r.notes as string | null,
+      created_at: r.created_at as string,
+      updated_at: r.updated_at as string,
+      deleted_at: null,
+    }));
+
     return {
       totalBalance,
       totalSavings,
+      totalDebts,
+      totalReceivables,
       netWorth,
       savingsRatio,
       monthlyIncome,
@@ -242,6 +301,7 @@ export async function getDashboardAnalytics(
       cashflowTrend,
       categoryBreakdown,
       topSavingsGoals,
+      topDebts,
       recentTransactions,
       currentPeriod,
     };
@@ -250,6 +310,8 @@ export async function getDashboardAnalytics(
     return {
       totalBalance: 0,
       totalSavings: 0,
+      totalDebts: 0,
+      totalReceivables: 0,
       netWorth: 0,
       savingsRatio: 0,
       monthlyIncome: 0,
@@ -258,6 +320,7 @@ export async function getDashboardAnalytics(
       cashflowTrend: [],
       categoryBreakdown: [],
       topSavingsGoals: [],
+      topDebts: [],
       recentTransactions: [],
       currentPeriod,
     };

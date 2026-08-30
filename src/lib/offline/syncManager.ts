@@ -17,6 +17,18 @@ import {
   deleteRecurringTransaction,
   updateRecurringTransaction,
 } from "@/actions/recurring";
+import {
+  createCategory,
+  deleteCategory,
+  updateCategory,
+} from "@/actions/categories";
+import {
+  createDebt,
+  deleteDebt,
+  payDebt,
+  updateDebt,
+} from "@/actions/debts";
+import { updateUserProfile } from "@/actions/profile";
 
 let isSyncInProgress = false;
 
@@ -112,6 +124,45 @@ export async function syncOfflineMutations(): Promise<{
               success = res.success;
             } else if (mutation.action === "delete") {
               const res = await deleteRecurringTransaction(mutation.payload.id);
+              success = res.success;
+            }
+            break;
+          }
+
+          case "category": {
+            if (mutation.action === "create") {
+              const res = await createCategory(mutation.payload);
+              success = res.success;
+            } else if (mutation.action === "update") {
+              const res = await updateCategory(mutation.payload.id, mutation.payload.data);
+              success = res.success;
+            } else if (mutation.action === "delete") {
+              const res = await deleteCategory(mutation.payload.id);
+              success = res.success;
+            }
+            break;
+          }
+
+          case "debt": {
+            if (mutation.action === "create") {
+              const res = await createDebt(mutation.payload);
+              success = res.success;
+            } else if (mutation.action === "update") {
+              const res = await updateDebt(mutation.payload.id, mutation.payload.data);
+              success = res.success;
+            } else if (mutation.action === "delete") {
+              const res = await deleteDebt(mutation.payload.id);
+              success = res.success;
+            } else if (mutation.action === "contribute") {
+              const res = await payDebt(mutation.payload);
+              success = res.success;
+            }
+            break;
+          }
+
+          case "profile": {
+            if (mutation.action === "update") {
+              const res = await updateUserProfile(mutation.payload);
               success = res.success;
             }
             break;

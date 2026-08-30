@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   LogOut,
+  Scale,
   ShieldCheck,
+  Tag,
   UserCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -130,7 +132,27 @@ export function UserProfileMenu() {
             className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Profil &amp; Pengaturan Akun</span>
+            <span>Profil &amp; Data Diri</span>
+          </Link>
+
+          {/* Categories Link */}
+          <Link
+            href="/categories"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Manajemen Kategori</span>
+          </Link>
+
+          {/* Debts Link */}
+          <Link
+            href="/debts"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Scale className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <span>Hutang &amp; Piutang</span>
           </Link>
 
           {/* Sign Out */}

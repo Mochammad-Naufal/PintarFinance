@@ -1,45 +1,34 @@
-import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/supabase/user";
 import { ProfileContent } from "./ProfileContent";
 import { getSavingsGoals } from "@/actions/savings";
 import { getWallets } from "@/actions/wallets";
+import { getUserProfile } from "@/actions/profile";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Profil & Pengaturan | Pintar Finance",
-  description: "Kelola profil, tabungan bersama, dan preferensi akun Pintar Finance Anda.",
+  description:
+    "Kelola profil pengguna, data personal, tabungan bersama, dan preferensi akun Pintar Finance Anda.",
 };
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const [userProfile, savingsGoals, wallets] = await Promise.all([
+      getUserProfile(),
+      getSavingsGoals(),
+      getWallets(),
+    ]);
 
-  if (!user) {
+    return (
+      <ProfileContent
+        user={userProfile}
+        savingsGoals={savingsGoals}
+        wallets={wallets}
+      />
+    );
+  } catch {
     redirect("/login");
   }
-
-  const [savingsGoals, wallets] = await Promise.all([
-    getSavingsGoals(),
-    getWallets(),
-  ]);
-
-  const profileData = {
-    name:
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      user.email?.split("@")[0] ||
-      "Pengguna",
-    email: user.email ?? "",
-  };
-
-  return (
-    <ProfileContent
-      user={profileData}
-      savingsGoals={savingsGoals}
-      wallets={wallets}
-    />
-  );
 }

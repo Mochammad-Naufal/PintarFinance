@@ -3,16 +3,24 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  AlertCircle,
   ArrowRight,
   ArrowUpWideNarrow,
   ChevronDown,
+  CreditCard,
   PiggyBank,
   Plus,
+  Scale,
   TrendingDown,
   TrendingUp,
   Wallet as WalletIcon,
 } from "lucide-react";
-import { type DashboardAnalytics, type SavingsGoal, type Wallet } from "@/types/finance";
+import {
+  type DashboardAnalytics,
+  type Debt,
+  type SavingsGoal,
+  type Wallet,
+} from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
 import { DynamicIcon } from "@/lib/icons";
 
@@ -21,13 +29,17 @@ interface NetWorthBannerProps {
   wallets?: Wallet[];
 }
 
-export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps) {
+export function NetWorthBanner({
+  analytics,
+  wallets = [],
+}: NetWorthBannerProps) {
   const [isWalletsOpen, setIsWalletsOpen] = useState(false);
   const [isSavingsOpen, setIsSavingsOpen] = useState(false);
+  const [isDebtsOpen, setIsDebtsOpen] = useState(false);
 
   const isNetPositive = analytics.monthlyNet >= 0;
 
-  // 1. Sort wallets ascending (smallest balance to highest) to easily spot low/critical liquidity
+  // 1. Sort wallets ascending (smallest balance to highest)
   const sortedWallets = useMemo(() => {
     return [...wallets].sort((a, b) => a.balance - b.balance);
   }, [wallets]);
@@ -35,6 +47,13 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
   // 2. Savings goals list
   const savingsGoals: SavingsGoal[] = analytics.topSavingsGoals || [];
   const hasSavings = savingsGoals.length > 0 && analytics.totalSavings > 0;
+
+  // 3. Active Debts (Liabilities)
+  const topDebts: Debt[] = analytics.topDebts || [];
+  const totalDebts = analytics.totalDebts || 0;
+  const hasDebts = totalDebts > 0;
+
+  const grossAssets = analytics.totalBalance + analytics.totalSavings;
 
   return (
     <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs space-y-6">
@@ -45,7 +64,13 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
             Total Estimasi Kekayaan Bersih (Net Worth)
           </p>
           <div className="flex items-baseline gap-3 mt-1.5 flex-wrap">
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white">
+            <h1
+              className={`text-3xl sm:text-4xl font-bold tracking-tight font-mono tabular-nums ${
+                analytics.netWorth < 0
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-zinc-900 dark:text-white"
+              }`}
+            >
               {formatCurrency(analytics.netWorth)}
             </h1>
 
@@ -68,14 +93,25 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
           </div>
         </div>
 
-        {/* Savings Goal Allocation Ratio Badge */}
-        <div className="text-left sm:text-right">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Alokasi Tabungan Impian
-          </p>
-          <p className="text-lg font-bold text-blue-600 dark:text-blue-400 font-mono tabular-nums mt-0.5">
-            {analytics.savingsRatio}% dari Total Aset
-          </p>
+        {/* Savings & Liabilities Quick Metrics */}
+        <div className="flex items-center gap-4 text-left sm:text-right">
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Total Aset Kotor
+            </p>
+            <p className="text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums mt-0.5">
+              {formatCurrency(grossAssets)}
+            </p>
+          </div>
+          <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800" />
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wider text-rose-500 dark:text-rose-400">
+              Sisa Hutang
+            </p>
+            <p className="text-base font-bold text-rose-600 dark:text-rose-400 font-mono tabular-nums mt-0.5">
+              -{formatCurrency(totalDebts)}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -85,22 +121,33 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
           {/* Liquid Wallets portion */}
           <div
             className="h-full bg-emerald-500 transition-all duration-500"
-            style={{ width: `${100 - analytics.savingsRatio}%` }}
-            title={`Likuiditas: ${100 - analytics.savingsRatio}%`}
+            style={{
+              width: `${
+                grossAssets > 0
+                  ? Math.round((analytics.totalBalance / grossAssets) * 100)
+                  : 50
+              }%`,
+            }}
+            title={`Likuiditas Kas: ${formatCurrency(analytics.totalBalance)}`}
           />
           {/* Savings Goals portion */}
           <div
             className="h-full bg-blue-500 transition-all duration-500"
-            style={{ width: `${analytics.savingsRatio}%` }}
-            title={`Pos Impian: ${analytics.savingsRatio}%`}
+            style={{
+              width: `${
+                grossAssets > 0
+                  ? Math.round((analytics.totalSavings / grossAssets) * 100)
+                  : 50
+              }%`,
+            }}
+            title={`Pos Impian: ${formatCurrency(analytics.totalSavings)}`}
           />
         </div>
 
-        {/* Interactive Collapsible / Accordion Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs items-start">
-          {/* ── Accordion 1: Likuiditas Kas & Dompet (Sorted Ascending) ── */}
+        {/* Interactive Collapsible / Accordion Grid (3 Columns) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs items-start">
+          {/* ── Accordion 1: Likuiditas Kas & Dompet ── */}
           <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/80 dark:border-zinc-800/60 overflow-hidden transition-all">
-            {/* Header Trigger */}
             <button
               type="button"
               onClick={() => setIsWalletsOpen((prev) => !prev)}
@@ -113,7 +160,7 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] uppercase font-medium text-zinc-500 dark:text-zinc-400">
-                    Likuiditas Kas &amp; Dompet ({100 - analytics.savingsRatio}%)
+                    Likuiditas Kas &amp; Dompet
                   </p>
                   <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums mt-0.5">
                     {formatCurrency(analytics.totalBalance)}
@@ -135,13 +182,12 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
               </div>
             </button>
 
-            {/* Collapsible Content */}
             {isWalletsOpen && (
               <div className="border-t border-zinc-200/70 dark:border-zinc-800/70 p-3.5 space-y-3 bg-white/70 dark:bg-zinc-900/40 animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 px-0.5">
                   <span className="flex items-center gap-1 font-medium">
                     <ArrowUpWideNarrow className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    Urutan Saldo Terkecil ke Terbesar:
+                    Urutan Saldo Terendah:
                   </span>
                 </div>
 
@@ -217,7 +263,7 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
                     href="/wallets"
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
                   >
-                    Kelola Semua Dompet <ArrowRight className="w-3 h-3" />
+                    Kelola Dompet <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>
@@ -226,7 +272,6 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
 
           {/* ── Accordion 2: Terkunci di Pos Impian ── */}
           <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/80 dark:border-zinc-800/60 overflow-hidden transition-all">
-            {/* Header Trigger */}
             <button
               type="button"
               onClick={() => setIsSavingsOpen((prev) => !prev)}
@@ -239,7 +284,7 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] uppercase font-medium text-zinc-500 dark:text-zinc-400">
-                    Terkunci di Pos Impian ({analytics.savingsRatio}%)
+                    Terkunci di Pos Impian
                   </p>
                   <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums mt-0.5">
                     {formatCurrency(analytics.totalSavings)}
@@ -261,16 +306,12 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
               </div>
             </button>
 
-            {/* Collapsible Content */}
             {isSavingsOpen && (
               <div className="border-t border-zinc-200/70 dark:border-zinc-800/70 p-3.5 space-y-3 bg-white/70 dark:bg-zinc-900/40 animate-in fade-in slide-in-from-top-1 duration-200">
                 {!hasSavings ? (
                   <div className="p-4 text-center rounded-xl bg-zinc-50 dark:bg-zinc-950/40 border border-dashed border-zinc-200 dark:border-zinc-800 space-y-1.5">
                     <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      Belum ada alokasi dana di pos impian
-                    </p>
-                    <p className="text-[11px] text-zinc-400">
-                      Mulai alokasikan tabungan impian agar dana terproteksi dari pengeluaran impulsif.
+                      Belum ada alokasi pos impian
                     </p>
                     <Link
                       href="/savings"
@@ -318,7 +359,6 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
                             </div>
                           </div>
 
-                          {/* Progress Bar */}
                           <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
                             <div
                               className="h-full rounded-full bg-blue-500 transition-all duration-300"
@@ -336,7 +376,91 @@ export function NetWorthBanner({ analytics, wallets = [] }: NetWorthBannerProps)
                     href="/savings"
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    Lihat Semua Pos Impian <ArrowRight className="w-3 h-3" />
+                    Lihat Pos Impian <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Accordion 3: Liabilitas & Hutang Aktif ── */}
+          <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/80 dark:border-zinc-800/60 overflow-hidden transition-all">
+            <button
+              type="button"
+              onClick={() => setIsDebtsOpen((prev) => !prev)}
+              aria-expanded={isDebtsOpen}
+              className="w-full flex items-center justify-between p-3.5 text-left hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60 active:scale-[0.99] transition-all group"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <CreditCard className="w-4 h-4" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase font-medium text-rose-600 dark:text-rose-400">
+                    Liabilitas &amp; Hutang Aktif
+                  </p>
+                  <p className="text-sm font-bold text-rose-600 dark:text-rose-400 font-mono tabular-nums mt-0.5">
+                    -{formatCurrency(totalDebts)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-zinc-200/70 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                  {topDebts.length} Hutang
+                </span>
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-transform duration-200 ${
+                    isDebtsOpen ? "rotate-180 text-rose-600 dark:text-rose-400" : ""
+                  }`}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </button>
+
+            {isDebtsOpen && (
+              <div className="border-t border-zinc-200/70 dark:border-zinc-800/70 p-3.5 space-y-3 bg-white/70 dark:bg-zinc-900/40 animate-in fade-in slide-in-from-top-1 duration-200">
+                {!hasDebts ? (
+                  <div className="p-3 text-center rounded-xl bg-zinc-50 dark:bg-zinc-950/40 border border-dashed border-zinc-200 dark:border-zinc-800">
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Bebas Hutang!
+                    </p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">
+                      Anda tidak memiliki liabilitas atau hutang aktif saat ini.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-0.5">
+                    {topDebts.map((d) => (
+                      <div
+                        key={d.id}
+                        className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200/70 dark:border-zinc-800/60 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                            {d.title}
+                          </p>
+                          <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                            {d.counterparty_name}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-bold text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+                            {formatCurrency(d.remaining_amount)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="pt-1 text-right">
+                  <Link
+                    href="/debts"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:underline"
+                  >
+                    Kelola Hutang &amp; Piutang <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
               </div>

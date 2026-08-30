@@ -8,7 +8,10 @@ export type MutationEntity =
   | "wallet"
   | "savings_goal"
   | "budget"
-  | "recurring";
+  | "recurring"
+  | "category"
+  | "debt"
+  | "profile";
 
 export type MutationAction =
   | "create"

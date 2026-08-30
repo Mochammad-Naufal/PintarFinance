@@ -11,56 +11,14 @@ import {
   type TransactionInput,
   transactionSchema,
 } from "@/types/finance";
+import { getCategories as fetchCategories } from "./categories";
 
-// ─── Query Categories ─────────────────────────────────────────────────────────
+// ─── Query Categories (Delegated to Master Category Service) ─────────────────
 
 export async function getCategories(
   type?: "expense" | "income"
 ): Promise<Category[]> {
-  try {
-    const user = await getCurrentUser();
-    const rows = await sql`
-      SELECT 
-        id,
-        user_id,
-        name,
-        type,
-        icon,
-        color,
-        created_at::text
-      FROM categories
-      WHERE (user_id = ${user.id} OR user_id IS NULL)
-        ${type ? sql`AND type = ${type}` : sql``}
-      ORDER BY 
-        CASE WHEN user_id = ${user.id} THEN 0 ELSE 1 END,
-        name ASC
-    `;
-
-    // Deduplicate categories by (type + lower(name)) prioritizing user-specific categories
-    const categoryMap = new Map<string, Category>();
-    for (const row of rows) {
-      const cat: Category = {
-        id: row.id as string,
-        user_id: row.user_id as string | null,
-        name: row.name as string,
-        type: row.type as Category["type"],
-        icon: row.icon as string,
-        color: row.color as string,
-        created_at: row.created_at as string,
-      };
-      const key = `${cat.type}-${cat.name.trim().toLowerCase()}`;
-      if (!categoryMap.has(key)) {
-        categoryMap.set(key, cat);
-      }
-    }
-
-    return Array.from(categoryMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name, "id")
-    );
-  } catch (error) {
-    console.error("Error fetching categories:", error);
-    return [];
-  }
+  return fetchCategories(type);
 }
 
 // ─── Query Transactions with Joins & Dynamic Filters ──────────────────────────

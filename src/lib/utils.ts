@@ -121,15 +121,21 @@ export function formatRelativeDate(
 // ---------------------------------------------------------------------------
 
 /**
- * Clamp a number between min and max.
+ * Calculate age from a birth date string (YYYY-MM-DD).
  */
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
+export function calculateAge(birthDateStr?: string | null): number | null {
+  if (!birthDateStr) return null;
+  const birthDate = new Date(birthDateStr);
+  if (isNaN(birthDate.getTime())) return null;
 
-/**
- * Return true if the value is null or undefined.
- */
-export function isNil(value: unknown): value is null | undefined {
-  return value === null || value === undefined
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+  return age >= 0 ? age : null;
 }

@@ -89,10 +89,16 @@ async function createTables() {
       email       VARCHAR(255) UNIQUE NOT NULL,
       name        VARCHAR(100) NOT NULL,
       avatar_url  TEXT,
+      birth_date  DATE,
+      occupation  VARCHAR(100),
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `;
+
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS occupation VARCHAR(100)`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`;
 
   await sql`
     CREATE TABLE IF NOT EXISTS wallets (
@@ -119,6 +125,25 @@ async function createTables() {
       icon        VARCHAR(50) NOT NULL DEFAULT 'tag',
       color       VARCHAR(20) DEFAULT '#64748b',
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS debts (
+      id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type               VARCHAR(20) NOT NULL CHECK (type IN ('debt', 'receivable')),
+      counterparty_name  VARCHAR(100) NOT NULL,
+      title              VARCHAR(150) NOT NULL,
+      total_amount       BIGINT NOT NULL,
+      remaining_amount   BIGINT NOT NULL,
+      due_date           DATE,
+      status             VARCHAR(20) NOT NULL CHECK (status IN ('unpaid', 'partial', 'paid')) DEFAULT 'unpaid',
+      wallet_id          UUID REFERENCES wallets(id) ON DELETE SET NULL,
+      notes              TEXT,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+      deleted_at         TIMESTAMPTZ
     )
   `;
 
