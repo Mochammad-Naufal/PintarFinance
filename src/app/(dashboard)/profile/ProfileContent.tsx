@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Edit3,
   FileText,
+  ImageIcon,
   KeyRound,
   Loader2,
   LogOut,
@@ -24,6 +25,7 @@ import {
   Sparkles,
   Sun,
   Tag,
+  Upload,
   User,
   UserPlus,
   Users,
@@ -40,6 +42,7 @@ import {
   type Wallet,
 } from "@/types/finance";
 import { calculateAge, formatCurrency, formatDate } from "@/lib/utils";
+import { compressImageToWebP } from "@/lib/imageCompressor";
 import { InviteMemberModal } from "@/components/modules/savings/InviteMemberModal";
 import { ExportModal } from "@/components/modules/transactions/ExportModal";
 
@@ -70,14 +73,42 @@ export function ProfileContent({
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   // Profile Edit State
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [editName, setEditName] = useState(user.name || "");
   const [editOccupation, setEditOccupation] = useState(user.occupation || "");
   const [editBirthDate, setEditBirthDate] = useState(user.birth_date || "");
   const [editAvatarUrl, setEditAvatarUrl] = useState(user.avatar_url || "");
+  const [isCompressing, setIsCompressing] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+
+  const handleAvatarFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressing(true);
+    setProfileError(null);
+
+    try {
+      // Compress client-side to WebP (max 400px, quality 0.82)
+      const compressedWebP = await compressImageToWebP(file, {
+        maxDimension: 400,
+        quality: 0.82,
+      });
+      setEditAvatarUrl(compressedWebP);
+      setProfileSuccess("Foto berhasil dikompresi ke WebP!");
+    } catch (err: any) {
+      setProfileError(err?.message || "Gagal memproses dan mengompresi gambar.");
+    } finally {
+      setIsCompressing(false);
+      // Reset input value so user can select the same file again if desired
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   // Shared Savings State
   const [inviteCode, setInviteCode] = useState("");
@@ -723,58 +754,98 @@ export function ProfileContent({
 
                 {/* Avatar Preview & Selection */}
                 <div>
-                  <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                    Foto Profil / Avatar
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                      Foto Profil / Avatar
+                    </label>
+                    {editAvatarUrl && editAvatarUrl.startsWith("data:image/webp") && (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        ✓ WebP Terkompresi
+                      </span>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-2 border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs relative">
                       {editAvatarUrl ? (
                         <Image
                           src={editAvatarUrl}
                           alt="Preview Avatar"
-                          width={56}
-                          height={56}
+                          width={64}
+                          height={64}
                           unoptimized
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                           {editName.charAt(0).toUpperCase() || "U"}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                        Pilih dari avatar preset di bawah atau tempel URL foto kustom Anda.
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      {/* Hidden File Input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarFileUpload}
+                        className="hidden"
+                      />
+
+                      {/* Upload Button */}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isCompressing}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 border border-zinc-300/80 dark:border-zinc-700 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                      >
+                        {isCompressing ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        )}
+                        <span>
+                          {isCompressing
+                            ? "Mengompresi ke WebP..."
+                            : "Pilih dari Galeri / File"}
+                        </span>
+                      </button>
+
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 leading-tight">
+                        Foto otomatis dikompresi ke format WebP (max 400px) agar hemat memori &amp; cepat dimuat.
                       </p>
                     </div>
                   </div>
 
                   {/* Avatar Preset Grid */}
-                  <div className="grid grid-cols-6 gap-2 pt-1 pb-2">
-                    {AVATAR_PRESETS.map((url, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setEditAvatarUrl(url)}
-                        className={`w-11 h-11 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                          editAvatarUrl === url
-                            ? "border-emerald-500 scale-105 shadow-xs"
-                            : "border-transparent opacity-75 hover:opacity-100 hover:border-zinc-300"
-                        }`}
-                      >
-                        <Image
-                          src={url}
-                          alt={`Preset ${idx + 1}`}
-                          width={44}
-                          height={44}
-                          unoptimized
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
+                  <div className="space-y-1.5 pt-1">
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Atau pilih karakter avatar preset:
+                    </p>
+                    <div className="grid grid-cols-6 gap-2">
+                      {AVATAR_PRESETS.map((url, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setEditAvatarUrl(url)}
+                          className={`w-11 h-11 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                            editAvatarUrl === url
+                              ? "border-emerald-500 scale-105 shadow-xs"
+                              : "border-transparent opacity-75 hover:opacity-100 hover:border-zinc-300"
+                          }`}
+                        >
+                          <Image
+                            src={url}
+                            alt={`Preset ${idx + 1}`}
+                            width={44}
+                            height={44}
+                            unoptimized
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Custom URL Input */}
@@ -783,7 +854,7 @@ export function ProfileContent({
                     placeholder="Atau tempel URL gambar (https://...)"
                     value={editAvatarUrl}
                     onChange={(e) => setEditAvatarUrl(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500 mt-1"
+                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500 mt-2"
                   />
                 </div>
 

@@ -12,6 +12,7 @@ import {
 import {
   type Budget,
   type Category,
+  type Debt,
   type RecurringTransaction,
   type SavingsGoal,
   type Transaction,
@@ -20,6 +21,7 @@ import {
 import { TransactionList } from "./TransactionList";
 import { RecurringList } from "../recurring/RecurringList";
 import { BudgetList } from "../budgets/BudgetList";
+import { DebtList } from "../debts/DebtList";
 import { formatCurrency } from "@/lib/utils";
 
 interface TransactionsViewTabsProps {
@@ -30,10 +32,11 @@ interface TransactionsViewTabsProps {
   savingsGoals: SavingsGoal[];
   recurringList: RecurringTransaction[];
   budgets: Budget[];
+  debts?: Debt[];
   currentPeriod: string;
 }
 
-type TabKey = "history" | "budget" | "recurring";
+type TabKey = "history" | "budget" | "recurring" | "debts";
 
 export function TransactionsViewTabs({
   initialTab,
@@ -43,11 +46,13 @@ export function TransactionsViewTabs({
   savingsGoals,
   recurringList,
   budgets,
+  debts = [],
   currentPeriod,
 }: TransactionsViewTabsProps) {
   const getInitialTab = (): TabKey => {
     if (initialTab === "budget" || initialTab === "anggaran") return "budget";
     if (initialTab === "recurring" || initialTab === "langganan") return "recurring";
+    if (initialTab === "debts" || initialTab === "hutang" || initialTab === "piutang") return "debts";
     return "history";
   };
 
@@ -56,6 +61,10 @@ export function TransactionsViewTabs({
   const todayStr = new Date().toISOString().slice(0, 10);
   const dueRecurringCount = recurringList.filter(
     (r) => r.is_active && r.next_run_date <= todayStr
+  ).length;
+
+  const activeDebtsCount = debts.filter(
+    (d) => d.status !== "paid" && d.remaining_amount > 0
   ).length;
 
   const totalIncome = transactions
@@ -116,6 +125,24 @@ export function TransactionsViewTabs({
           {dueRecurringCount > 0 && (
             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
               {dueRecurringCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("debts")}
+          className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all relative whitespace-nowrap flex-1 sm:flex-initial ${
+            activeTab === "debts"
+              ? "bg-white dark:bg-zinc-800 text-rose-600 dark:text-rose-400 shadow-xs font-bold"
+              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+          }`}
+        >
+          <Scale className="w-4 h-4" />
+          <span>Hutang &amp; Piutang (Liabilitas)</span>
+          {activeDebtsCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400">
+              {activeDebtsCount}
             </span>
           )}
         </button>
@@ -199,6 +226,12 @@ export function TransactionsViewTabs({
           wallets={wallets}
           categories={categories}
         />
+      )}
+
+      {activeTab === "debts" && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          <DebtList initialDebts={debts} wallets={wallets} />
+        </div>
       )}
     </div>
   );

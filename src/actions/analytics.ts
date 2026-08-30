@@ -251,9 +251,9 @@ export async function getDashboardAnalytics(
     );
 
     // Build 6-Month Trend Array
-    const trendMap = new Map<string, { income: number; expense: number }>();
+    const trendMap = new Map<string, { income: number; expense: number; debt: number }>();
     for (const p of sixMonthPeriods) {
-      trendMap.set(p, { income: 0, expense: 0 });
+      trendMap.set(p, { income: 0, expense: 0, debt: 0 });
     }
 
     for (const row of trendRows) {
@@ -268,16 +268,41 @@ export async function getDashboardAnalytics(
       }
     }
 
+    // Allocate current debt load into trend
+    if (trendMap.has(currentPeriod)) {
+      trendMap.get(currentPeriod)!.debt = totalDebts;
+    }
+
     const cashflowTrend: MonthlyCashflowTrend[] = sixMonthPeriods.map((p) => {
-      const data = trendMap.get(p) || { income: 0, expense: 0 };
+      const data = trendMap.get(p) || { income: 0, expense: 0, debt: 0 };
       return {
         month: p,
         label: getMonthLabel(p),
         income: data.income,
         expense: data.expense,
+        debt: data.debt || 0,
         net: data.income - data.expense,
       };
     });
+
+    // 10. Calculate Debt-to-Income Ratio (DTI) & Debt Health Status
+    const debtToIncomeRatio =
+      monthlyIncome > 0
+        ? Math.round((totalDebts / monthlyIncome) * 100)
+        : totalDebts > 0
+        ? 100
+        : 0;
+
+    let debtHealthStatus: "healthy" | "moderate" | "critical" | "debt_free" = "debt_free";
+    if (totalDebts === 0) {
+      debtHealthStatus = "debt_free";
+    } else if (debtToIncomeRatio <= 20) {
+      debtHealthStatus = "healthy";
+    } else if (debtToIncomeRatio <= 40) {
+      debtHealthStatus = "moderate";
+    } else {
+      debtHealthStatus = "critical";
+    }
 
     const topSavingsGoals: SavingsGoal[] = topSavingsRows.map((r) => ({
       id: r.id as string,
@@ -301,6 +326,8 @@ export async function getDashboardAnalytics(
       totalReceivables,
       netWorth,
       savingsRatio,
+      debtToIncomeRatio,
+      debtHealthStatus,
       monthlyIncome,
       monthlyExpense,
       monthlyNet,
@@ -320,6 +347,8 @@ export async function getDashboardAnalytics(
       totalReceivables: 0,
       netWorth: 0,
       savingsRatio: 0,
+      debtToIncomeRatio: 0,
+      debtHealthStatus: "debt_free",
       monthlyIncome: 0,
       monthlyExpense: 0,
       monthlyNet: 0,

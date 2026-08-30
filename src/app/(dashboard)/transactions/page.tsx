@@ -3,14 +3,15 @@ import { getWallets } from "@/actions/wallets";
 import { getSavingsGoals } from "@/actions/savings";
 import { getRecurringTransactions } from "@/actions/recurring";
 import { getBudgets, getCurrentPeriod } from "@/actions/budgets";
+import { getDebts } from "@/actions/debts";
 import { TransactionsViewTabs } from "@/components/modules/transactions/TransactionsViewTabs";
 import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Transaksi, Anggaran & Langganan",
-  description: "Buku besar arus kas masuk, alokasi anggaran kategori, dan tagihan berkala.",
+  title: "Transaksi, Anggaran, Langganan & Hutang",
+  description: "Buku besar arus kas masuk, alokasi anggaran, tagihan berkala, dan pos hutang piutang.",
 };
 
 interface TransactionsPageProps {
@@ -21,7 +22,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
   const params = searchParams ? await searchParams : {};
   const currentPeriod = params.period || (await getCurrentPeriod());
 
-  const [transactions, wallets, categories, savingsGoals, recurringList, budgets] =
+  const [transactions, wallets, categories, savingsGoals, recurringList, budgets, debts] =
     await Promise.all([
       getTransactions(),
       getWallets(),
@@ -29,6 +30,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
       getSavingsGoals(),
       getRecurringTransactions(),
       getBudgets(currentPeriod),
+      getDebts(),
     ]);
 
   return (
@@ -36,17 +38,17 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
       {/* Title */}
       <div>
         <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
-          Transaksi, Anggaran &amp; Langganan
+          Transaksi, Anggaran &amp; Hutang Piutang
         </h1>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-          Pantau seluruh pergerakan uang harian, batas alokasi anggaran kategori, dan jadwal tagihan otomatis.
+          Pantau pergerakan uang harian, batas alokasi anggaran, jadwal tagihan otomatis, serta kelola liabilitas Anda.
         </p>
       </div>
 
       {/* AI Contextual Advisor */}
       <AIContextCard moduleType="transactions" moduleName="Transaksi & Anggaran" />
 
-      {/* Segmented View Tabs */}
+      {/* Segmented View Tabs (4 Tabs) */}
       <TransactionsViewTabs
         initialTab={params.tab}
         transactions={transactions}
@@ -55,6 +57,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
         savingsGoals={savingsGoals}
         recurringList={recurringList}
         budgets={budgets}
+        debts={debts}
         currentPeriod={currentPeriod}
       />
     </div>

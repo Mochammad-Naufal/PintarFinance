@@ -431,6 +431,7 @@ export interface MonthlyCashflowTrend {
   label: string; // 'Mar 26'
   income: number;
   expense: number;
+  debt: number;
   net: number;
 }
 
@@ -450,6 +451,8 @@ export interface DashboardAnalytics {
   totalReceivables: number;
   netWorth: number;
   savingsRatio: number;
+  debtToIncomeRatio: number;
+  debtHealthStatus: "healthy" | "moderate" | "critical" | "debt_free";
   monthlyIncome: number;
   monthlyExpense: number;
   monthlyNet: number;

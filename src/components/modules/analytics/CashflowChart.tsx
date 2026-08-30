@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { TrendingUp } from "lucide-react";
+import { Scale, TrendingUp } from "lucide-react";
 import { type MonthlyCashflowTrend } from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
 
@@ -27,10 +27,6 @@ function buildPoints(
     x: CHART_PAD + i * step,
     y: CHART_H - Math.max(4, Math.round((v / (maxVal || 1)) * (CHART_H - 16))) - 4,
   }));
-}
-
-function toPolyline(pts: { x: number; y: number }[]): string {
-  return pts.map((p) => `${p.x},${p.y}`).join(" ");
 }
 
 /** Build smooth SVG path (cubic bezier) */
@@ -61,13 +57,18 @@ export function CashflowChart({ data }: CashflowChartProps) {
     ro.observe(node);
   };
 
-  const maxVal = Math.max(...data.map((d) => Math.max(d.income, d.expense)), 1_000_000);
+  const maxVal = Math.max(
+    ...data.map((d) => Math.max(d.income, d.expense, d.debt || 0)),
+    1_000_000
+  );
 
   const incomePoints = buildPoints(data.map((d) => d.income), maxVal, svgWidth);
   const expensePoints = buildPoints(data.map((d) => d.expense), maxVal, svgWidth);
+  const debtPoints = buildPoints(data.map((d) => d.debt || 0), maxVal, svgWidth);
 
   const incomePath = toSmooth(incomePoints);
   const expensePath = toSmooth(expensePoints);
+  const debtPath = toSmooth(debtPoints);
 
   // Area fill below income line (close path to bottom)
   const incomeArea =
@@ -88,12 +89,12 @@ export function CashflowChart({ data }: CashflowChartProps) {
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Tren Arus Kas (6 Bulan)
+            Tren Arus Kas &amp; Beban Liabilitas (6 Bulan)
           </h2>
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <div className="flex flex-wrap items-center gap-3.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
             <span>Pemasukan</span>
@@ -102,21 +103,31 @@ export function CashflowChart({ data }: CashflowChartProps) {
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
             <span>Pengeluaran</span>
           </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
+            <span>Beban Hutang</span>
+          </div>
         </div>
       </div>
 
       {/* Tooltip */}
       {hovered && (
-        <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs animate-in fade-in duration-100">
+        <div className="flex flex-wrap items-center gap-3 px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs animate-in fade-in duration-100">
           <span className="font-semibold text-zinc-700 dark:text-zinc-300 shrink-0">{hovered.label}</span>
           <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            {formatCurrency(hovered.income)}
+            <span>Masuk: {formatCurrency(hovered.income)}</span>
           </div>
           <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-mono tabular-nums">
             <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
-            {formatCurrency(hovered.expense)}
+            <span>Keluar: {formatCurrency(hovered.expense)}</span>
           </div>
+          {hovered.debt > 0 && (
+            <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-mono tabular-nums">
+              <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+              <span>Hutang: {formatCurrency(hovered.debt)}</span>
+            </div>
+          )}
           <div
             className={`font-mono tabular-nums font-semibold ${
               hovered.net >= 0
@@ -187,11 +198,21 @@ export function CashflowChart({ data }: CashflowChartProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+          <path
+            d={debtPath}
+            fill="none"
+            stroke="#a855f7"
+            strokeWidth="2"
+            strokeDasharray="5 3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
 
           {/* Data points + invisible hit targets */}
           {data.map((item, idx) => {
             const ip = incomePoints[idx];
             const ep = expensePoints[idx];
+            const dp = debtPoints[idx];
             const isHovered = hoveredIndex === idx;
 
             return ip && ep ? (
@@ -216,6 +237,18 @@ export function CashflowChart({ data }: CashflowChartProps) {
                   strokeWidth={isHovered ? 0 : 2}
                   className="transition-all duration-100"
                 />
+                {/* Debt dot (if > 0) */}
+                {dp && item.debt > 0 && (
+                  <circle
+                    cx={dp.x}
+                    cy={dp.y}
+                    r={isHovered ? 4.5 : 3}
+                    fill={isHovered ? "#a855f7" : "#fff"}
+                    stroke="#a855f7"
+                    strokeWidth={isHovered ? 0 : 2}
+                    className="transition-all duration-100"
+                  />
+                )}
 
                 {/* Large invisible hover target */}
                 <rect
