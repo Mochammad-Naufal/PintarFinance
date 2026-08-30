@@ -62,11 +62,19 @@ export function formatCurrency(
 
 /**
  * Parse a value to a Date object safely.
- * Accepts Date | string | number.
+ * ISO-8601 strings from the database are always UTC — parseISO correctly
+ * produces a UTC Date that the browser then renders in the local timezone
+ * (WIB/GMT+7 on Indonesian devices). We do NOT add a manual +7 offset to
+ * avoid double-shifting on non-WIB devices.
  */
 function toDate(value: Date | string | number): Date {
   if (value instanceof Date) return value
   if (typeof value === "number") return new Date(value)
+  // Ensure bare dates "YYYY-MM-DD" are treated as local midnight, not UTC midnight
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split("-").map(Number)
+    return new Date(y, m - 1, d)
+  }
   return parseISO(value)
 }
 

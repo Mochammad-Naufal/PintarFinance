@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import {
   type ActionResult,
@@ -10,6 +10,7 @@ import {
 } from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
 import { DynamicIcon } from "@/lib/icons";
+import { useCurrencyInput } from "@/lib/useCurrencyInput";
 
 interface BudgetModalProps {
   isOpen: boolean;
@@ -38,9 +39,19 @@ function BudgetForm({
   const [categoryId, setCategoryId] = useState(
     initialData?.category_id ?? categories[0]?.id ?? ""
   );
-  const [limitAmount, setLimitAmount] = useState(
-    initialData ? String(initialData.limit_amount) : ""
-  );
+  const {
+    displayValue: limitAmount,
+    rawValue: rawLimitAmount,
+    onChange: onLimitChange,
+    onBlur: onLimitBlur,
+    setValue: setLimitValue,
+  } = useCurrencyInput(initialData?.limit_amount ?? 0);
+
+  // Keep hook in sync when initialData changes (e.g. editing)
+  useEffect(() => {
+    if (initialData?.limit_amount) setLimitValue(initialData.limit_amount);
+  }, [initialData?.limit_amount, setLimitValue]);
+
   const [selectedPeriod, setSelectedPeriod] = useState(
     initialData?.period ?? period
   );
@@ -66,8 +77,7 @@ function BudgetForm({
     e.preventDefault();
     setError(null);
 
-    const numLimit = Number(limitAmount);
-    if (!numLimit || numLimit < 10000) {
+    if (!rawLimitAmount || rawLimitAmount < 10000) {
       setError("Batas limit anggaran minimal Rp 10.000");
       return;
     }
@@ -83,7 +93,7 @@ function BudgetForm({
       const res = await onSave({
         category_id: categoryId,
         period: selectedPeriod,
-        limit_amount: numLimit,
+        limit_amount: rawLimitAmount,
       });
 
       if (res.success) {
@@ -157,19 +167,19 @@ function BudgetForm({
               Rp
             </span>
             <input
-              type="number"
-              min="10000"
-              step="1000"
+              type="text"
+              inputMode="numeric"
               required
               placeholder="0"
               value={limitAmount}
-              onChange={(e) => setLimitAmount(e.target.value)}
+              onChange={onLimitChange}
+              onBlur={onLimitBlur}
               className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
             />
           </div>
-          {Number(limitAmount) > 0 && (
+          {rawLimitAmount > 0 && (
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
-              = {formatCurrency(Number(limitAmount))}
+              = {formatCurrency(rawLimitAmount)}
             </p>
           )}
         </div>

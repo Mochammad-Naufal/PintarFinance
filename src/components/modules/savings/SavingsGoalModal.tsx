@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import {
   type ActionResult,
@@ -9,6 +9,7 @@ import {
 } from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
 import { DynamicIcon } from "@/lib/icons";
+import { useCurrencyInput } from "@/lib/useCurrencyInput";
 
 interface SavingsGoalModalProps {
   isOpen: boolean;
@@ -53,12 +54,26 @@ function SavingsGoalForm({
   onSave,
 }: SavingsGoalFormProps) {
   const [name, setName] = useState(initialData?.name ?? "");
-  const [targetAmount, setTargetAmount] = useState(
-    initialData ? String(initialData.target_amount) : ""
-  );
-  const [currentAmount, setCurrentAmount] = useState(
-    initialData ? String(initialData.current_amount) : "0"
-  );
+  const {
+    displayValue: targetAmount,
+    rawValue: rawTargetAmount,
+    onChange: onTargetChange,
+    onBlur: onTargetBlur,
+    setValue: setTargetValue,
+  } = useCurrencyInput(initialData?.target_amount ?? 0);
+  const {
+    displayValue: currentAmount,
+    rawValue: rawCurrentAmount,
+    onChange: onCurrentChange,
+    onBlur: onCurrentBlur,
+    setValue: setCurrentValue,
+  } = useCurrencyInput(initialData?.current_amount ?? 0);
+
+  useEffect(() => {
+    if (initialData?.target_amount) setTargetValue(initialData.target_amount);
+    if (initialData?.current_amount !== undefined) setCurrentValue(initialData.current_amount);
+  }, [initialData?.target_amount, initialData?.current_amount, setTargetValue, setCurrentValue]);
+
   const [targetDate, setTargetDate] = useState(
     initialData?.target_date ? initialData.target_date.slice(0, 10) : ""
   );
@@ -75,8 +90,8 @@ function SavingsGoalForm({
     try {
       const res = await onSave({
         name,
-        target_amount: Number(targetAmount) || 0,
-        current_amount: Number(currentAmount) || 0,
+        target_amount: rawTargetAmount || 0,
+        current_amount: rawCurrentAmount || 0,
         target_date: targetDate || null,
         color,
         icon,
@@ -131,18 +146,19 @@ function SavingsGoalForm({
               Rp
             </span>
             <input
-              type="number"
-              min="1000"
+              type="text"
+              inputMode="numeric"
               required
               placeholder="0"
               value={targetAmount}
-              onChange={(e) => setTargetAmount(e.target.value)}
+              onChange={onTargetChange}
+              onBlur={onTargetBlur}
               className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500"
             />
           </div>
-          {Number(targetAmount) > 0 && (
+          {rawTargetAmount > 0 && (
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
-              = {formatCurrency(Number(targetAmount))}
+              = {formatCurrency(rawTargetAmount)}
             </p>
           )}
         </div>
@@ -156,10 +172,11 @@ function SavingsGoalForm({
               Rp
             </span>
             <input
-              type="number"
-              min="0"
+              type="text"
+              inputMode="numeric"
               value={currentAmount}
-              onChange={(e) => setCurrentAmount(e.target.value)}
+              onChange={onCurrentChange}
+              onBlur={onCurrentBlur}
               className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-sm font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums focus:outline-none focus:border-blue-500"
             />
           </div>

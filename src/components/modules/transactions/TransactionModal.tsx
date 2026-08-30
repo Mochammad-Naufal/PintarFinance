@@ -12,6 +12,8 @@ import {
   type Wallet,
 } from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
+import { useCurrencyInput } from "@/lib/useCurrencyInput";
+
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -38,7 +40,7 @@ function TransactionForm({
   savingsGoals,
 }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>("expense");
-  const [amount, setAmount] = useState("");
+  const { displayValue: amount, rawValue: rawAmount, onChange: onAmountChange, onBlur: onAmountBlur } = useCurrencyInput(0);
   const [walletId, setWalletId] = useState(wallets[0]?.id ?? "");
   const [destinationWalletId, setDestinationWalletId] = useState(
     wallets[1]?.id ?? wallets[0]?.id ?? ""
@@ -98,7 +100,7 @@ function TransactionForm({
     e.preventDefault();
     setError(null);
 
-    const numAmount = Number(amount);
+    const numAmount = rawAmount;
     if (!numAmount || numAmount <= 0) {
       setError("Nominal transaksi harus lebih dari 0");
       return;
@@ -123,7 +125,7 @@ function TransactionForm({
         destination_wallet_id: type === "transfer" ? destinationWalletId : null,
         category_id: type === "expense" || type === "income" ? categoryId : null,
         savings_goal_id: type === "saving" ? savingsGoalId : null,
-        amount: numAmount,
+        amount: rawAmount,
         admin_fee: Number(adminFee) || 0,
         transaction_date: new Date(transactionDate).toISOString(),
         description: description.trim() || null,
@@ -192,18 +194,19 @@ function TransactionForm({
               Rp
             </span>
             <input
-              type="number"
-              min="100"
+              type="text"
+              inputMode="numeric"
               required
               placeholder="0"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={onAmountChange}
+              onBlur={onAmountBlur}
               className="w-full pl-10 pr-3.5 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 text-base font-bold text-zinc-900 dark:text-zinc-100 font-mono tabular-nums placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
             />
           </div>
-          {Number(amount) > 0 && (
+          {rawAmount > 0 && (
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-mono">
-              = {formatCurrency(Number(amount))}
+              = {formatCurrency(rawAmount)}
             </p>
           )}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { BarChart3 } from "lucide-react";
+import { useRef, useState } from "react";
+import { TrendingUp } from "lucide-react";
 import { type MonthlyCashflowTrend } from "@/types/finance";
 import { formatCurrency } from "@/lib/utils";
 
@@ -9,23 +9,86 @@ interface CashflowChartProps {
   data: MonthlyCashflowTrend[];
 }
 
+const CHART_H = 160;   // px height of the SVG drawing area
+const CHART_PAD = 12;  // horizontal padding inside SVG
+
+/**
+ * Maps data points to (x, y) SVG coordinates.
+ */
+function buildPoints(
+  values: number[],
+  maxVal: number,
+  width: number
+): { x: number; y: number }[] {
+  const n = values.length;
+  if (n === 0) return [];
+  const step = (width - CHART_PAD * 2) / Math.max(n - 1, 1);
+  return values.map((v, i) => ({
+    x: CHART_PAD + i * step,
+    y: CHART_H - Math.max(4, Math.round((v / (maxVal || 1)) * (CHART_H - 16))) - 4,
+  }));
+}
+
+function toPolyline(pts: { x: number; y: number }[]): string {
+  return pts.map((p) => `${p.x},${p.y}`).join(" ");
+}
+
+/** Build smooth SVG path (cubic bezier) */
+function toSmooth(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const curr = pts[i];
+    const cx = (prev.x + curr.x) / 2;
+    d += ` C ${cx} ${prev.y}, ${cx} ${curr.y}, ${curr.x} ${curr.y}`;
+  }
+  return d;
+}
+
 export function CashflowChart({ data }: CashflowChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [svgWidth, setSvgWidth] = useState(320);
 
-  // Find max value for dynamic scaling
-  const maxVal = Math.max(
-    ...data.map((d) => Math.max(d.income, d.expense)),
-    1000000
-  );
+  // Measure actual SVG width via ResizeObserver
+  const observedRef = (node: SVGSVGElement | null) => {
+    if (!node) return;
+    (svgRef as React.MutableRefObject<SVGSVGElement | null>).current = node;
+    const ro = new ResizeObserver(([entry]) => {
+      setSvgWidth(entry.contentRect.width || 320);
+    });
+    ro.observe(node);
+  };
+
+  const maxVal = Math.max(...data.map((d) => Math.max(d.income, d.expense)), 1_000_000);
+
+  const incomePoints = buildPoints(data.map((d) => d.income), maxVal, svgWidth);
+  const expensePoints = buildPoints(data.map((d) => d.expense), maxVal, svgWidth);
+
+  const incomePath = toSmooth(incomePoints);
+  const expensePath = toSmooth(expensePoints);
+
+  // Area fill below income line (close path to bottom)
+  const incomeArea =
+    incomePoints.length > 0
+      ? `${incomePath} L ${incomePoints[incomePoints.length - 1].x} ${CHART_H} L ${incomePoints[0].x} ${CHART_H} Z`
+      : "";
+  const expenseArea =
+    expensePoints.length > 0
+      ? `${expensePath} L ${expensePoints[expensePoints.length - 1].x} ${CHART_H} L ${expensePoints[0].x} ${CHART_H} Z`
+      : "";
+
+  const hovered = hoveredIndex !== null ? data[hoveredIndex] : null;
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs flex flex-col justify-between space-y-4">
-      {/* Header & Legend */}
+    <div className="p-5 rounded-2xl bg-white dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 shadow-xs flex flex-col space-y-4">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <BarChart3 className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+          <TrendingUp className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
           <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            Tren Arus Kas (6 Bulan Terakhir)
+            Tren Arus Kas (6 Bulan)
           </h2>
         </div>
 
@@ -42,71 +105,144 @@ export function CashflowChart({ data }: CashflowChartProps) {
         </div>
       </div>
 
-      {/* Chart Visual Bars Area */}
-      <div className="relative pt-6 pb-2">
-        {/* Subtle Horizontal Grid lines */}
-        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20 dark:opacity-10 pb-8">
-          <div className="border-b border-zinc-400 dark:border-zinc-600 w-full" />
-          <div className="border-b border-zinc-400 dark:border-zinc-600 w-full" />
-          <div className="border-b border-zinc-400 dark:border-zinc-600 w-full" />
+      {/* Tooltip */}
+      {hovered && (
+        <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs animate-in fade-in duration-100">
+          <span className="font-semibold text-zinc-700 dark:text-zinc-300 shrink-0">{hovered.label}</span>
+          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            {formatCurrency(hovered.income)}
+          </div>
+          <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-mono tabular-nums">
+            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+            {formatCurrency(hovered.expense)}
+          </div>
+          <div
+            className={`font-mono tabular-nums font-semibold ${
+              hovered.net >= 0
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-rose-600 dark:text-rose-400"
+            }`}
+          >
+            Net: {hovered.net >= 0 ? "+" : ""}
+            {formatCurrency(hovered.net)}
+          </div>
         </div>
+      )}
 
-        {/* Bars Container */}
-        <div className="grid grid-cols-6 gap-2 sm:gap-4 items-end h-48 relative z-10">
+      {/* SVG Line Chart */}
+      <div className="relative select-none">
+        <svg
+          ref={observedRef}
+          width="100%"
+          height={CHART_H + 24}
+          className="overflow-visible"
+          onMouseLeave={() => setHoveredIndex(null)}
+          style={{ touchAction: "none" }}
+        >
+          <defs>
+            <linearGradient id="income-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+            </linearGradient>
+            <linearGradient id="expense-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
+
+          {/* Horizontal grid lines */}
+          {[0.25, 0.5, 0.75, 1].map((frac) => (
+            <line
+              key={frac}
+              x1={CHART_PAD}
+              y1={CHART_H - frac * (CHART_H - 16)}
+              x2={svgWidth - CHART_PAD}
+              y2={CHART_H - frac * (CHART_H - 16)}
+              stroke="currentColor"
+              strokeWidth="1"
+              className="text-zinc-200 dark:text-zinc-700"
+              strokeDasharray="4 3"
+            />
+          ))}
+
+          {/* Area fills */}
+          <path d={incomeArea} fill="url(#income-grad)" />
+          <path d={expenseArea} fill="url(#expense-grad)" />
+
+          {/* Lines */}
+          <path
+            d={incomePath}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d={expensePath}
+            fill="none"
+            stroke="#f43f5e"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Data points + invisible hit targets */}
           {data.map((item, idx) => {
-            const incomeHeight = Math.max(4, Math.round((item.income / maxVal) * 100));
-            const expenseHeight = Math.max(4, Math.round((item.expense / maxVal) * 100));
+            const ip = incomePoints[idx];
+            const ep = expensePoints[idx];
             const isHovered = hoveredIndex === idx;
 
-            return (
-              <div
-                key={item.month}
-                className="flex flex-col items-center h-full justify-end group cursor-pointer relative"
-                onMouseEnter={() => setHoveredIndex(idx)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              >
-                {/* Floating Tooltip */}
-                {isHovered && (
-                  <div className="absolute -top-16 z-30 p-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white shadow-xl text-[11px] whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95 duration-100 border border-zinc-700/50">
-                    <p className="font-semibold text-zinc-300 mb-1">{item.label}</p>
-                    <div className="flex items-center justify-between gap-3 text-emerald-400 font-mono tabular-nums">
-                      <span>Masuk:</span>
-                      <span>{formatCurrency(item.income)}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-rose-400 font-mono tabular-nums">
-                      <span>Keluar:</span>
-                      <span>{formatCurrency(item.expense)}</span>
-                    </div>
-                  </div>
-                )}
+            return ip && ep ? (
+              <g key={item.month}>
+                {/* Income dot */}
+                <circle
+                  cx={ip.x}
+                  cy={ip.y}
+                  r={isHovered ? 5 : 3.5}
+                  fill={isHovered ? "#10b981" : "#fff"}
+                  stroke="#10b981"
+                  strokeWidth={isHovered ? 0 : 2}
+                  className="transition-all duration-100"
+                />
+                {/* Expense dot */}
+                <circle
+                  cx={ep.x}
+                  cy={ep.y}
+                  r={isHovered ? 5 : 3.5}
+                  fill={isHovered ? "#f43f5e" : "#fff"}
+                  stroke="#f43f5e"
+                  strokeWidth={isHovered ? 0 : 2}
+                  className="transition-all duration-100"
+                />
 
-                {/* Dual Bars */}
-                <div className="flex items-end gap-1 sm:gap-1.5 w-full justify-center h-full">
-                  {/* Income bar */}
-                  <div
-                    className={`w-3 sm:w-5 rounded-t-md bg-emerald-500 transition-all duration-300 ${
-                      isHovered ? "opacity-100 brightness-110" : "opacity-90"
-                    }`}
-                    style={{ height: `${incomeHeight}%` }}
-                  />
+                {/* Large invisible hover target */}
+                <rect
+                  x={ip.x - 22}
+                  y={0}
+                  width={44}
+                  height={CHART_H + 20}
+                  fill="transparent"
+                  onMouseEnter={() => setHoveredIndex(idx)}
+                  onTouchStart={() => setHoveredIndex(idx)}
+                  style={{ cursor: "crosshair" }}
+                />
 
-                  {/* Expense bar */}
-                  <div
-                    className={`w-3 sm:w-5 rounded-t-md bg-rose-500 transition-all duration-300 ${
-                      isHovered ? "opacity-100 brightness-110" : "opacity-85"
-                    }`}
-                    style={{ height: `${expenseHeight}%` }}
-                  />
-                </div>
-
-                {/* Month Label */}
-                <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mt-2 truncate w-full text-center">
+                {/* Month label at bottom */}
+                <text
+                  x={ip.x}
+                  y={CHART_H + 18}
+                  textAnchor="middle"
+                  fontSize={10}
+                  className="fill-zinc-500 dark:fill-zinc-400 font-medium"
+                >
                   {item.label}
-                </span>
-              </div>
-            );
+                </text>
+              </g>
+            ) : null;
           })}
-        </div>
+        </svg>
       </div>
     </div>
   );
