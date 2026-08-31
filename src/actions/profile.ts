@@ -23,7 +23,22 @@ export async function getUserProfile(): Promise<UserProfile> {
       data: { user: authUser },
     } = await supabase.auth.getUser();
 
-    // Ensure columns exist in users table
+    // 1. Session Metadata Cleanup:
+    // If a legacy large Base64 avatar exists in auth.user.user_metadata,
+    // clear it to keep JWT tokens and session cookies strictly below 2 KB.
+    if (authUser?.user_metadata?.avatar_url) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            avatar_url: null,
+          },
+        });
+      } catch {
+        // Non-blocking cleanup
+      }
+    }
+
+    // 2. Ensure columns exist in users table
     try {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS occupation VARCHAR(100)`;
@@ -32,6 +47,7 @@ export async function getUserProfile(): Promise<UserProfile> {
       // Ignore if already exists or restricted
     }
 
+    // 3. Fetch profile and avatar ONLY from database table
     const rows = await sql`
       SELECT 
         id,
@@ -54,7 +70,7 @@ export async function getUserProfile(): Promise<UserProfile> {
         id: r.id as string,
         name: (r.name as string) || authUser?.user_metadata?.full_name || user.name || "Pengguna",
         email: (r.email as string) || user.email || "",
-        avatar_url: (r.avatar_url as string | null) || authUser?.user_metadata?.avatar_url || null,
+        avatar_url: (r.avatar_url as string | null) || null,
         birth_date: birthDate,
         age: calculateAge(birthDate),
         occupation: (r.occupation as string | null) || authUser?.user_metadata?.occupation || null,
@@ -63,7 +79,7 @@ export async function getUserProfile(): Promise<UserProfile> {
       };
     }
 
-    // Fallback from auth metadata
+    // Fallback if record not yet inserted
     const metaBirthDate = authUser?.user_metadata?.birth_date as string | null;
     return {
       id: user.id,
@@ -73,7 +89,7 @@ export async function getUserProfile(): Promise<UserProfile> {
         user.name ||
         "Pengguna",
       email: user.email || "",
-      avatar_url: authUser?.user_metadata?.avatar_url || null,
+      avatar_url: null,
       birth_date: metaBirthDate || null,
       age: calculateAge(metaBirthDate),
       occupation: authUser?.user_metadata?.occupation || null,
@@ -99,18 +115,20 @@ export async function updateUserProfile(
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
 
-    // 1. Update Supabase Auth metadata
+    // 1. Update Supabase Auth metadata WITHOUT avatar_url.
+    // Setting avatar_url to null ensures JWT cookie remains tiny (<2 KB),
+    // eliminating HTTP 431 / 494 Request Header Too Large completely.
     await supabase.auth.updateUser({
       data: {
         full_name: validated.name.trim(),
         name: validated.name.trim(),
-        avatar_url: validated.avatar_url || null,
+        avatar_url: null,
         occupation: validated.occupation || null,
         birth_date: validated.birth_date || null,
       },
     });
 
-    // 2. Update users DB table
+    // 2. Store avatar (Base64 string or public URL) EXCLUSIVELY in the database table
     try {
       await sql`
         INSERT INTO users (id, email, name, avatar_url, birth_date, occupation, updated_at)

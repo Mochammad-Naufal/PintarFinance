@@ -47,7 +47,7 @@ export function UserProfileMenu() {
           setUser({
             name: profile.name || authUser.user_metadata?.full_name || authUser.user_metadata?.name || "Pengguna",
             email: profile.email || authUser.email || "",
-            avatar_url: profile.avatar_url || authUser.user_metadata?.avatar_url || null,
+            avatar_url: profile.avatar_url || null,
           });
         } catch {
           setUser({
@@ -57,7 +57,7 @@ export function UserProfileMenu() {
               authUser.email?.split("@")[0] ||
               "Pengguna",
             email: authUser.email || "",
-            avatar_url: authUser.user_metadata?.avatar_url || null,
+            avatar_url: null,
           });
         }
       }
@@ -71,12 +71,12 @@ export function UserProfileMenu() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser((prev) => ({
+          ...prev,
           name:
             session.user.user_metadata?.full_name ||
             session.user.user_metadata?.name ||
             prev.name,
           email: session.user.email || prev.email,
-          avatar_url: session.user.user_metadata?.avatar_url || prev.avatar_url,
         }));
       }
     });
