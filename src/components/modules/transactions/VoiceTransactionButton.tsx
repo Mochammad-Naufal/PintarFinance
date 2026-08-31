@@ -18,6 +18,7 @@ interface VoiceTransactionButtonProps {
   categories: Category[];
   savingsGoals: SavingsGoal[];
   onParsed: (result: ParsedVoiceTransaction) => void;
+  onLiveTranscript?: (text: string) => void;
   className?: string;
   compact?: boolean;
 }
@@ -27,6 +28,7 @@ export function VoiceTransactionButton({
   categories,
   savingsGoals,
   onParsed,
+  onLiveTranscript,
   className = "",
   compact = false,
 }: VoiceTransactionButtonProps) {
@@ -45,6 +47,8 @@ export function VoiceTransactionButton({
     lang: "id-ID",
     onResult: (spokenText, isFinal) => {
       setActiveTranscript(spokenText);
+      onLiveTranscript?.(spokenText);
+
       if (isFinal && spokenText.trim()) {
         setIsProcessing(true);
         setTimeout(() => {
@@ -60,7 +64,10 @@ export function VoiceTransactionButton({
     },
   });
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
     if (isListening) {
       stopListening();
     } else {
@@ -74,7 +81,7 @@ export function VoiceTransactionButton({
   }
 
   return (
-    <div className="relative inline-flex items-center">
+    <div className="relative inline-flex items-center" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
         onClick={handleToggle}
@@ -109,9 +116,12 @@ export function VoiceTransactionButton({
         )}
       </button>
 
-      {/* Floating Active Voice Listening Banner */}
+      {/* Floating Active Voice Listening Banner (Higher z-index than modals) */}
       {isListening && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-zinc-900/95 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-700 dark:border-zinc-300 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-150 max-w-[90vw] sm:max-w-md">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-2xl bg-zinc-900/95 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-700 dark:border-zinc-300 shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-150 max-w-[90vw] sm:max-w-md"
+        >
           <div className="w-3 h-3 rounded-full bg-rose-500 animate-ping shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[11px] font-bold text-rose-400 uppercase tracking-wider">
@@ -123,8 +133,11 @@ export function VoiceTransactionButton({
           </div>
           <button
             type="button"
-            onClick={stopListening}
-            className="p-1 rounded-lg text-zinc-400 hover:text-white dark:hover:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              stopListening();
+            }}
+            className="p-1 rounded-lg text-zinc-400 hover:text-white dark:hover:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -133,7 +146,7 @@ export function VoiceTransactionButton({
 
       {/* Floating Error Message */}
       {errorMessage && !isListening && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-600 dark:text-rose-400 whitespace-nowrap shadow-md">
+        <div className="absolute top-full left-0 mt-1.5 z-[110] p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-600 dark:text-rose-400 whitespace-nowrap shadow-md">
           {errorMessage}
         </div>
       )}

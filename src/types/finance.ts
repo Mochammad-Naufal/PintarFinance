@@ -334,7 +334,10 @@ export interface Debt {
   title: string;
   total_amount: number;
   remaining_amount: number;
+  monthly_installment?: number;
+  due_day?: number;
   due_date: string | null;
+  target_payoff_date?: string | null;
   status: DebtStatus;
   wallet_id: string | null;
   notes: string | null;
@@ -349,6 +352,22 @@ export interface Debt {
   wallet_color?: string;
 }
 
+export interface DebtPayment {
+  id: string;
+  debt_id: string;
+  user_id: string;
+  amount: number;
+  wallet_id?: string | null;
+  wallet_name?: string;
+  debt_title: string;
+  counterparty_name: string;
+  debt_type: DebtType;
+  payment_date: string;
+  remaining_after: number;
+  notes?: string | null;
+  created_at: string;
+}
+
 export const debtSchema = z.object({
   type: z.enum(["debt", "receivable"], {
     message: "Pilih tipe: Hutang Saya atau Piutang",
@@ -361,9 +380,16 @@ export const debtSchema = z.object({
     .string()
     .min(1, "Judul / keterangan hutang wajib diisi")
     .max(150, "Maksimal 150 karakter"),
-  total_amount: z.coerce.number().min(100, "Nominal minimal Rp 100"),
+  total_amount: z.coerce.number().min(100, "Nominal pokok minimal Rp 100"),
   remaining_amount: z.coerce.number().min(0, "Sisa nominal tidak boleh negatif").optional(),
+  monthly_installment: z.coerce.number().min(0, "Cicilan tidak boleh negatif").optional(),
+  due_day: z.coerce.number().min(1, "Tanggal minimal 1").max(31, "Tanggal maksimal 31").optional(),
   due_date: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => (val && val.trim() !== "" ? val : null)),
+  target_payoff_date: z
     .string()
     .nullable()
     .optional()
@@ -391,6 +417,35 @@ export const payDebtSchema = z.object({
 });
 
 export type PayDebtInput = z.infer<typeof payDebtSchema>;
+
+// ─── User Feedback Types & Schemas ───────────────────────────────────────────
+
+export type FeedbackCategory = "bug" | "feature_request" | "question" | "other";
+
+export const feedbackSchema = z.object({
+  category: z.enum(["bug", "feature_request", "question", "other"], {
+    message: "Pilih kategori masukan yang sesuai",
+  }),
+  message: z
+    .string()
+    .min(5, "Pesan masukan minimal 5 karakter")
+    .max(2000, "Pesan masukan maksimal 2000 karakter"),
+  is_anonymous: z.boolean().default(false),
+});
+
+export type FeedbackInput = z.infer<typeof feedbackSchema>;
+
+export interface UserFeedback {
+  id: string;
+  user_id?: string | null;
+  user_name?: string | null;
+  user_email?: string | null;
+  category: FeedbackCategory;
+  message: string;
+  is_anonymous: boolean;
+  status: "unread" | "read" | "resolved";
+  created_at: string;
+}
 
 // ─── User Profile Types & Schemas ────────────────────────────────────────────
 

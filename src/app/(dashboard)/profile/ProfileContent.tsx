@@ -17,6 +17,7 @@ import {
   KeyRound,
   Loader2,
   LogOut,
+  MessageSquarePlus,
   Moon,
   PieChart,
   Repeat,
@@ -45,6 +46,7 @@ import { calculateAge, formatCurrency, formatDate } from "@/lib/utils";
 import { compressImageToWebP } from "@/lib/imageCompressor";
 import { InviteMemberModal } from "@/components/modules/savings/InviteMemberModal";
 import { ExportModal } from "@/components/modules/transactions/ExportModal";
+import { FeedbackModal } from "@/components/modules/feedback/FeedbackModal";
 
 interface ProfileContentProps {
   user: UserProfile;
@@ -121,6 +123,7 @@ export function ProfileContent({
     useState<SavingsGoal | null>(null);
   const [isSelectGoalModalOpen, setIsSelectGoalModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
 
   const initial = user.name.charAt(0).toUpperCase() || "U";
   const age = calculateAge(user.birth_date);
@@ -153,6 +156,14 @@ export function ProfileContent({
       if (res.success && res.data) {
         setUser(res.data);
         setProfileSuccess("Profil berhasil diperbarui!");
+
+        // Real-time synchronization to Header & AppShell
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("user-profile-updated", { detail: res.data })
+          );
+        }
+
         setTimeout(() => {
           setIsEditProfileOpen(false);
           setProfileSuccess(null);
@@ -683,6 +694,33 @@ export function ProfileContent({
               <span>Aktif</span>
             </div>
           </div>
+
+          {/* Feedback & Bug Report Link */}
+          <button
+            type="button"
+            onClick={() => setIsFeedbackOpen(true)}
+            className="w-full flex items-center justify-between px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left cursor-pointer group"
+          >
+            <div className="flex items-center gap-3.5 min-w-0 flex-1 pr-2">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <MessageSquarePlus className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                    Kirim Masukan ke Developer
+                  </p>
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                    Feedback
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                  Laporkan bug/error, ajukan ide fitur, atau kirim ulasan
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-200 group-hover:translate-x-0.5 transition-all shrink-0" />
+          </button>
         </div>
       </div>
 
@@ -1002,6 +1040,12 @@ export function ProfileContent({
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         wallets={wallets}
+      />
+
+      {/* ─── Modal 4: Feedback Modal ───────────────────────────────────────── */}
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
       />
     </div>
   );

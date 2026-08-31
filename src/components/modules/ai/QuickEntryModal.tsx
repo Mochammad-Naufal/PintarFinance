@@ -214,6 +214,7 @@ export function QuickEntryModal({
                   wallets={wallets}
                   categories={categories}
                   savingsGoals={savingsGoals}
+                  onLiveTranscript={(text) => setPromptText(text)}
                   onParsed={(res) => {
                     setPromptText(res.rawTranscript);
                     handleParse(res.rawTranscript);

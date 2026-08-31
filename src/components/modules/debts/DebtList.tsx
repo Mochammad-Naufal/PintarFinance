@@ -5,7 +5,9 @@ import {
   AlertTriangle,
   CreditCard,
   HandCoins,
+  History,
   Plus,
+  Receipt,
   Scale,
   Search,
 } from "lucide-react";
@@ -13,6 +15,7 @@ import {
   type ActionResult,
   type Debt,
   type DebtInput,
+  type DebtPayment,
   type DebtType,
   type PayDebtInput,
   type Wallet,
@@ -20,6 +23,7 @@ import {
 import {
   createDebt,
   deleteDebt,
+  getDebtPayments,
   getDebts,
   payDebt,
   updateDebt,
@@ -28,6 +32,7 @@ import { DebtSummary } from "./DebtSummary";
 import { DebtCard } from "./DebtCard";
 import { DebtModal } from "./DebtModal";
 import { PayDebtModal } from "./PayDebtModal";
+import { DebtPaymentHistoryList } from "./DebtPaymentHistoryList";
 import {
   addOfflineMutation,
   getOfflineData,
@@ -39,10 +44,12 @@ interface DebtListProps {
   wallets: Wallet[];
 }
 
-type TabFilter = "all" | "debt" | "receivable" | "paid";
+type TabFilter = "all" | "debt" | "receivable" | "history";
 
 export function DebtList({ initialDebts, wallets }: DebtListProps) {
   const [debts, setDebts] = useState<Debt[]>(initialDebts);
+  const [payments, setPayments] = useState<DebtPayment[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
   const [activeTab, setActiveTab] = useState<TabFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -53,7 +60,7 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
   const [deletingDebt, setDeletingDebt] = useState<Debt | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load from offline cache on mount
+  // Load debts from offline cache on mount
   useEffect(() => {
     async function loadCache() {
       const cached = await getOfflineData<Debt[]>("pf_debts");
@@ -66,6 +73,29 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
     void loadCache();
   }, [initialDebts]);
 
+  // Load payment logs on mount & tab activation
+  const fetchPayments = async () => {
+    setIsLoadingPayments(true);
+    try {
+      const logs = await getDebtPayments();
+      setPayments(logs);
+    } catch (err) {
+      console.warn("Could not fetch debt payment logs:", err);
+    } finally {
+      setIsLoadingPayments(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchPayments();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "history") {
+      void fetchPayments();
+    }
+  }, [activeTab]);
+
   // Filter debts
   const filteredDebts = useMemo(() => {
     return debts.filter((d) => {
@@ -73,7 +103,6 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
       let matchTab = true;
       if (activeTab === "debt") matchTab = d.type === "debt" && d.status !== "paid";
       else if (activeTab === "receivable") matchTab = d.type === "receivable" && d.status !== "paid";
-      else if (activeTab === "paid") matchTab = d.status === "paid" || d.remaining_amount <= 0;
 
       // Search filter
       const matchSearch =
@@ -85,9 +114,21 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
     });
   }, [debts, activeTab, searchQuery]);
 
+  // Filter payment history logs by search query
+  const filteredPayments = useMemo(() => {
+    if (!searchQuery.trim()) return payments;
+    const q = searchQuery.trim().toLowerCase();
+    return payments.filter(
+      (p) =>
+        p.debt_title.toLowerCase().includes(q) ||
+        p.counterparty_name.toLowerCase().includes(q) ||
+        (p.notes && p.notes.toLowerCase().includes(q)) ||
+        (p.wallet_name && p.wallet_name.toLowerCase().includes(q))
+    );
+  }, [payments, searchQuery]);
+
   const debtCount = debts.filter((d) => d.type === "debt" && d.status !== "paid").length;
   const receivableCount = debts.filter((d) => d.type === "receivable" && d.status !== "paid").length;
-  const paidCount = debts.filter((d) => d.status === "paid" || d.remaining_amount <= 0).length;
 
   const handleSaveDebt = async (data: DebtInput): Promise<ActionResult<Debt>> => {
     if (editingDebt) {
@@ -144,7 +185,10 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
           title: data.title,
           total_amount: data.total_amount,
           remaining_amount: data.remaining_amount ?? data.total_amount,
+          monthly_installment: data.monthly_installment ?? 0,
+          due_day: data.due_day ?? 1,
           due_date: data.due_date ?? null,
+          target_payoff_date: data.target_payoff_date ?? null,
           status: "unpaid",
           wallet_id: data.wallet_id ?? null,
           notes: data.notes ?? null,
@@ -173,6 +217,7 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
         const updated = debts.map((d) => (d.id === data.debt_id ? res.data! : d));
         setDebts(updated);
         void saveOfflineData("pf_debts", updated);
+        void fetchPayments();
         return res;
       }
       return res;
@@ -237,7 +282,7 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
           <button
             type="button"
             onClick={() => setActiveTab("all")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === "all"
                 ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
                 : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800"
@@ -248,7 +293,7 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
           <button
             type="button"
             onClick={() => setActiveTab("debt")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === "debt"
                 ? "bg-white dark:bg-zinc-800 text-rose-600 dark:text-rose-400 shadow-xs"
                 : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800"
@@ -262,7 +307,7 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
           <button
             type="button"
             onClick={() => setActiveTab("receivable")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               activeTab === "receivable"
                 ? "bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs"
                 : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800"
@@ -275,14 +320,15 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("paid")}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-              activeTab === "paid"
-                ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-xs"
+            onClick={() => setActiveTab("history")}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              activeTab === "history"
+                ? "bg-white dark:bg-zinc-800 text-purple-600 dark:text-purple-400 shadow-xs"
                 : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800"
             }`}
           >
-            <span>Lunas ({paidCount})</span>
+            <Receipt className="w-3.5 h-3.5" />
+            <span>Riwayat Pembayaran ({payments.length})</span>
           </button>
         </div>
 
@@ -292,7 +338,11 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               type="text"
-              placeholder="Cari pihak / judul hutang..."
+              placeholder={
+                activeTab === "history"
+                  ? "Cari log riwayat pembayaran..."
+                  : "Cari pihak / judul hutang..."
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-emerald-500"
@@ -314,8 +364,13 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
         </div>
       </div>
 
-      {/* ─── Debts Grid ──────────────────────────────────────────────────── */}
-      {filteredDebts.length === 0 ? (
+      {/* ─── Tab Content ─────────────────────────────────────────────────── */}
+      {activeTab === "history" ? (
+        <DebtPaymentHistoryList
+          payments={filteredPayments}
+          isLoading={isLoadingPayments}
+        />
+      ) : filteredDebts.length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400 flex items-center justify-center mx-auto">
             <Scale className="w-6 h-6" />
@@ -378,43 +433,35 @@ export function DebtList({ initialDebts, wallets }: DebtListProps) {
         >
           <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-zinc-900 border-t sm:border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Hapus Data Pos Hutang?
+                <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                  Hapus Data {deletingDebt.type === "debt" ? "Hutang" : "Piutang"}?
                 </h3>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Konfirmasi penghapusan catatan
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Tindakan ini akan mengarsipkan pos &ldquo;{deletingDebt.title}&rdquo;.
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Apakah Anda yakin ingin menghapus catatan{" "}
-              <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">
-                &ldquo;{deletingDebt.title}&rdquo; ({deletingDebt.counterparty_name})
-              </strong>
-              ? Data yang dihapus tidak lagi masuk ke dalam perhitungan liabilitas.
-            </p>
-
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setDeletingDebt(null)}
                 disabled={isDeleting}
-                className="px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                onClick={() => setDeletingDebt(null)}
+                className="px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 Batal
               </button>
               <button
                 type="button"
-                onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold disabled:opacity-50 active:scale-95 transition-all shadow-xs"
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold active:scale-95 transition-all shadow-xs"
               >
-                {isDeleting ? "Menghapus..." : "Ya, Hapus Data"}
+                {isDeleting ? "Menghapus..." : "Ya, Hapus"}
               </button>
             </div>
           </div>
