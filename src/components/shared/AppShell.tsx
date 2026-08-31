@@ -29,16 +29,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     // 2. Service Worker Registration
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
+      const registerSW = () => {
         navigator.serviceWorker
-          .register("/sw.js")
+          .register("/sw.js", { scope: "/" })
           .then((registration) => {
             console.log("[PWA] Service Worker registered with scope:", registration.scope);
           })
           .catch((error) => {
             console.warn("[PWA] Service Worker registration failed:", error);
           });
-      });
+      };
+
+      if (document.readyState === "complete") {
+        registerSW();
+      } else {
+        window.addEventListener("load", registerSW, { once: true });
+      }
     }
   }, []);
 

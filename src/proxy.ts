@@ -8,18 +8,26 @@ const PUBLIC_ROUTES = ["/login", "/register", "/offline"];
 const AUTH_REDIRECT_ROUTES = ["/login", "/register", "/"];
 
 export async function proxy(request: NextRequest) {
-  const { supabase, supabaseResponse } = createClient(request);
   const pathname = request.nextUrl.pathname;
 
-  // 1. Immediately bypass all static files, images, icons, and fonts
+  // 1. Immediately bypass all static files, service workers, manifests, images, icons, and fonts
+  // WITHOUT initializing Supabase SSR cookies to avoid HTTP 431 (Request Header Fields Too Large)
   if (
+    pathname === "/sw.js" ||
+    pathname === "/manifest.json" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/robots.txt" ||
+    pathname === "/favicon.ico" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/icons") ||
     pathname.startsWith("/auth/callback") ||
-    pathname.includes(".") // Any static file with extension like logo.png, favicon.ico, etc.
+    pathname.includes(".")
   ) {
-    return supabaseResponse;
+    return NextResponse.next();
   }
+
+  // 2. Initialize Supabase SSR only on application pages
+  const { supabase, supabaseResponse } = createClient(request);
 
   // Always call getUser() to refresh the session cookie
   const {
@@ -31,14 +39,14 @@ export async function proxy(request: NextRequest) {
     pathname === route || pathname.startsWith(route + "/")
   );
 
-  // 2. If already logged in and visiting auth pages → redirect to /dashboard
+  // 3. If already logged in and visiting auth pages → redirect to /dashboard
   if (user && isAuthRedirectRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
-  // 3. If NOT logged in and visiting a protected route → redirect to /login
+  // 4. If NOT logged in and visiting a protected route → redirect to /login
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -46,7 +54,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 4. Otherwise, pass through (with refreshed cookies)
+  // 5. Otherwise, pass through (with refreshed cookies)
   return supabaseResponse;
 }
 
@@ -56,8 +64,10 @@ export const config = {
      * Match all request paths EXCEPT:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt, and image assets
+     * - sw.js (service worker)
+     * - manifest.json / manifest.webmanifest
+     * - favicon.ico, robots.txt, and image/font assets
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|sw\\.js|manifest\\.webmanifest|manifest\\.json|robots\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|js|css)$).*)",
   ],
 };
