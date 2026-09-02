@@ -1,10 +1,12 @@
-const CACHE_NAME = "pintar-finance-v1";
+const CACHE_NAME = "pintar-finance-v2";
 const OFFLINE_URL = "/offline";
 
 const PRECACHE_ASSETS = [
   "/",
   OFFLINE_URL,
+  "/favicon.ico",
   "/logo.png",
+  "/apple-icon.png",
   "/manifest.json",
   "/icon.png",
   "/icons/icon.svg",
