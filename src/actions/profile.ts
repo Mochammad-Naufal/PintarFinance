@@ -13,6 +13,137 @@ import {
 } from "@/types/finance";
 import { calculateAge } from "@/lib/utils";
 
+// ─── Ensure Avatars Storage Bucket Exists ─────────────────────────────────────
+export async function ensureAvatarBucket(): Promise<void> {
+  try {
+    // 1. Ensure storage bucket 'avatars' exists and is public
+    await sql`
+      INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+      VALUES (
+        'avatars',
+        'avatars',
+        true,
+        2097152, -- 2 MB limit
+        ARRAY['image/webp', 'image/png', 'image/jpeg', 'image/jpg']
+      )
+      ON CONFLICT (id) DO UPDATE SET
+        public = true,
+        file_size_limit = 2097152,
+        allowed_mime_types = ARRAY['image/webp', 'image/png', 'image/jpeg', 'image/jpg']
+    `;
+
+    // 2. Ensure Storage RLS Policies exist
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage' AND policyname = 'Avatars Public Read'
+        ) THEN
+          CREATE POLICY "Avatars Public Read" ON storage.objects
+          FOR SELECT USING (bucket_id = 'avatars');
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage' AND policyname = 'Avatars Authenticated Upload'
+        ) THEN
+          CREATE POLICY "Avatars Authenticated Upload" ON storage.objects
+          FOR INSERT TO authenticated
+          WITH CHECK (bucket_id = 'avatars');
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies WHERE tablename = 'objects' AND schemaname = 'storage' AND policyname = 'Avatars Authenticated Update'
+        ) THEN
+          CREATE POLICY "Avatars Authenticated Update" ON storage.objects
+          FOR UPDATE TO authenticated
+          USING (bucket_id = 'avatars');
+        END IF;
+      END $$;
+    `;
+  } catch (err) {
+    console.warn("Notice: ensureAvatarBucket policy check (may be managed by Supabase dashboard):", err);
+  }
+}
+
+// ─── Upload Avatar to Supabase Storage (Binary WebP) ──────────────────────────
+export async function uploadAvatar(
+  formData: FormData
+): Promise<ActionResult<{ publicUrl: string }>> {
+  try {
+    const user = await getCurrentUser();
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+      return { success: false, error: "File gambar tidak ditemukan." };
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return { success: false, error: "Format file harus berupa gambar." };
+    }
+
+    await ensureAvatarBucket();
+
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+
+    const filePath = `${user.id}/avatar.webp`;
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Upload with upsert to overwrite old avatar without accumulating storage
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, buffer, {
+        contentType: "image/webp",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error("Supabase storage upload error:", uploadError);
+      return {
+        success: false,
+        error: `Gagal mengunggah avatar ke storage: ${uploadError.message}`,
+      };
+    }
+
+    // Get public URL
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+    // Append cache-buster for immediate reactive display
+    const finalUrl = `${publicUrl}?v=${Date.now()}`;
+
+    // Update database table users directly
+    await sql`
+      UPDATE users
+      SET avatar_url = ${finalUrl}, updated_at = now()
+      WHERE id = ${user.id}
+    `;
+
+    // Ensure auth metadata avatar_url is cleansed to keep cookies < 2KB
+    await supabase.auth.updateUser({
+      data: {
+        avatar_url: null,
+      },
+    });
+
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
+
+    return {
+      success: true,
+      data: { publicUrl: finalUrl },
+    };
+  } catch (error) {
+    console.error("Error in uploadAvatar:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Terjadi kesalahan saat mengunggah avatar.",
+    };
+  }
+}
+
 // ─── Get User Profile ────────────────────────────────────────────────────────
 export async function getUserProfile(): Promise<UserProfile> {
   try {
@@ -128,7 +259,13 @@ export async function updateUserProfile(
       },
     });
 
-    // 2. Store avatar (Base64 string or public URL) EXCLUSIVELY in the database table
+    // 2. Do not allow raw Base64 strings to be stored in DB if public URL is expected
+    const cleanAvatarUrl =
+      validated.avatar_url && validated.avatar_url.startsWith("data:")
+        ? null // Prevent bloated base64 insertion
+        : validated.avatar_url || null;
+
+    // 3. Store avatar (Public URL only) EXCLUSIVELY in the database table
     try {
       await sql`
         INSERT INTO users (id, email, name, avatar_url, birth_date, occupation, updated_at)
@@ -136,14 +273,14 @@ export async function updateUserProfile(
           ${user.id},
           ${user.email || ""},
           ${validated.name.trim()},
-          ${validated.avatar_url || null},
+          ${cleanAvatarUrl},
           ${validated.birth_date ? sql`${validated.birth_date}::date` : null},
           ${validated.occupation || null},
           now()
         )
         ON CONFLICT (id) DO UPDATE SET
           name = EXCLUDED.name,
-          avatar_url = EXCLUDED.avatar_url,
+          avatar_url = COALESCE(${cleanAvatarUrl}, users.avatar_url),
           birth_date = EXCLUDED.birth_date,
           occupation = EXCLUDED.occupation,
           updated_at = now()
@@ -159,7 +296,7 @@ export async function updateUserProfile(
       id: user.id,
       name: validated.name.trim(),
       email: user.email || "",
-      avatar_url: validated.avatar_url || null,
+      avatar_url: cleanAvatarUrl,
       occupation: validated.occupation || null,
       birth_date: validated.birth_date || null,
       age: calculateAge(validated.birth_date),

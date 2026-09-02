@@ -1,6 +1,7 @@
 /**
  * Utility for client-side image resizing and compression to WebP format.
- * Optimizes mobile photo uploads (<50KB typical) using HTML5 Canvas API.
+ * Converts mobile/desktop photo uploads to binary WebP Blob/File (<50KB typical)
+ * using HTML5 Canvas API, completely avoiding bloated Base64 in auth cookies and forms.
  */
 
 export interface CompressImageOptions {
@@ -8,10 +9,20 @@ export interface CompressImageOptions {
   quality?: number;
 }
 
-export async function compressImageToWebP(
+export interface CompressedImageResult {
+  file: File;
+  blob: Blob;
+  dataUrl: string; // for instant local UI preview before upload
+  sizeBytes: number;
+}
+
+/**
+ * Compresses an image file to a binary WebP Blob & File, with instant dataUrl preview.
+ */
+export async function compressImageToWebPBlob(
   file: File,
   options: CompressImageOptions = {}
-): Promise<string> {
+): Promise<CompressedImageResult> {
   const { maxDimension = 400, quality = 0.82 } = options;
 
   return new Promise((resolve, reject) => {
@@ -56,15 +67,48 @@ export async function compressImageToWebP(
         ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert to WebP Base64 Data URL
-        try {
-          const webpDataUrl = canvas.toDataURL("image/webp", quality);
-          resolve(webpDataUrl);
-        } catch {
-          // Fallback to JPEG if WebP canvas export is unsupported in ancient browser
-          const jpegDataUrl = canvas.toDataURL("image/jpeg", quality);
-          resolve(jpegDataUrl);
-        }
+        // Export as binary WebP Blob
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              // Fallback to JPEG if WebP canvas export is unsupported
+              canvas.toBlob(
+                (jpegBlob) => {
+                  if (!jpegBlob) {
+                    reject(new Error("Gagal mengekspor gambar hasil kompresi."));
+                    return;
+                  }
+                  const finalFile = new File([jpegBlob], "avatar.jpg", {
+                    type: "image/jpeg",
+                  });
+                  const dataUrl = canvas.toDataURL("image/jpeg", quality);
+                  resolve({
+                    file: finalFile,
+                    blob: jpegBlob,
+                    dataUrl,
+                    sizeBytes: jpegBlob.size,
+                  });
+                },
+                "image/jpeg",
+                quality
+              );
+              return;
+            }
+
+            const finalFile = new File([blob], "avatar.webp", {
+              type: "image/webp",
+            });
+            const dataUrl = canvas.toDataURL("image/webp", quality);
+            resolve({
+              file: finalFile,
+              blob,
+              dataUrl,
+              sizeBytes: blob.size,
+            });
+          },
+          "image/webp",
+          quality
+        );
       };
 
       img.onerror = () => {
@@ -80,4 +124,15 @@ export async function compressImageToWebP(
 
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Backward-compatible helper for cases needing string Data URL.
+ */
+export async function compressImageToWebP(
+  file: File,
+  options: CompressImageOptions = {}
+): Promise<string> {
+  const result = await compressImageToWebPBlob(file, options);
+  return result.dataUrl;
 }

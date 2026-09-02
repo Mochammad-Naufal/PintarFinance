@@ -13,7 +13,14 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/actions/auth";
 import { getUserProfile } from "@/actions/profile";
-import { FeedbackModal } from "../modules/feedback/FeedbackModal";
+import dynamic from "next/dynamic";
+
+// Dynamic Code Splitting for secondary feedback modal
+const FeedbackModal = dynamic(
+  () =>
+    import("../modules/feedback/FeedbackModal").then((mod) => mod.FeedbackModal),
+  { ssr: false }
+);
 
 interface UserProfileState {
   name: string;

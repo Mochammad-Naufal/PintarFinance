@@ -9,9 +9,33 @@ import {
 } from "@/types/finance";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { DynamicIcon } from "@/lib/icons";
+import dynamic from "next/dynamic";
 import { NetWorthBanner } from "./NetWorthBanner";
-import { CashflowChart } from "./CashflowChart";
 import { ExpenseCategoryChart } from "./ExpenseCategoryChart";
+
+const CashflowChart = dynamic(
+  () => import("./CashflowChart").then((mod) => mod.CashflowChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-card border border-border/60 rounded-2xl p-6 animate-pulse flex flex-col justify-between h-[320px]">
+        <div className="flex justify-between items-center mb-4">
+          <div className="h-5 w-40 bg-muted/60 rounded" />
+          <div className="h-4 w-24 bg-muted/40 rounded" />
+        </div>
+        <div className="w-full flex-1 flex items-end gap-3 pb-2">
+          <div className="h-1/3 flex-1 bg-muted/40 rounded-t" />
+          <div className="h-1/2 flex-1 bg-muted/50 rounded-t" />
+          <div className="h-2/3 flex-1 bg-muted/40 rounded-t" />
+          <div className="h-1/2 flex-1 bg-muted/60 rounded-t" />
+          <div className="h-3/4 flex-1 bg-muted/50 rounded-t" />
+          <div className="h-4/5 flex-1 bg-muted/40 rounded-t" />
+        </div>
+        <div className="h-3 w-full bg-muted/30 rounded mt-2" />
+      </div>
+    ),
+  }
+);
 import { AIContextCard } from "@/components/modules/ai/AIContextCard";
 import {
   ArrowDownLeft,

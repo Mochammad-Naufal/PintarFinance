@@ -90,8 +90,6 @@ export async function getDebts(type?: DebtType): Promise<Debt[]> {
         d.wallet_id,
         d.notes,
         d.created_at::text,
-        d.updated_at::text,
-        d.deleted_at::text,
         w.name AS wallet_name,
         w.icon AS wallet_icon,
         w.color AS wallet_color
@@ -126,8 +124,8 @@ export async function getDebts(type?: DebtType): Promise<Debt[]> {
       wallet_icon: r.wallet_icon as string | undefined,
       wallet_color: r.wallet_color as string | undefined,
       created_at: r.created_at as string,
-      updated_at: r.updated_at as string,
-      deleted_at: r.deleted_at as string | null,
+      updated_at: (r.created_at as string) || "",
+      deleted_at: null,
     }));
   } catch (error) {
     console.error("Error fetching debts:", error);

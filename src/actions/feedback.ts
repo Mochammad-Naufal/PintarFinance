@@ -78,3 +78,43 @@ export async function submitFeedback(
     };
   }
 }
+
+// ─── Get User Feedbacks (Selective Projection) ───────────────────────────────
+export async function getUserFeedbacks(): Promise<UserFeedback[]> {
+  try {
+    const user = await getCurrentUser();
+    await ensureFeedbackTable();
+
+    const rows = await sql`
+      SELECT 
+        id,
+        user_id,
+        user_name,
+        user_email,
+        category,
+        message,
+        is_anonymous,
+        status,
+        created_at::text
+      FROM user_feedbacks
+      WHERE user_id = ${user.id}
+      ORDER BY created_at DESC
+      LIMIT 50
+    `;
+
+    return rows.map((r) => ({
+      id: r.id as string,
+      user_id: r.user_id as string | null,
+      user_name: r.user_name as string | null,
+      user_email: r.user_email as string | null,
+      category: r.category as UserFeedback["category"],
+      message: r.message as string,
+      is_anonymous: Boolean(r.is_anonymous),
+      status: r.status as UserFeedback["status"],
+      created_at: r.created_at as string,
+    }));
+  } catch (error) {
+    console.error("Error fetching user feedbacks:", error);
+    return [];
+  }
+}

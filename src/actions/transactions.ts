@@ -46,8 +46,6 @@ export async function getTransactions(
         t.description,
         t.receipt_url,
         t.created_at::text,
-        t.updated_at::text,
-        t.deleted_at::text,
         -- Joined Source Wallet
         w.name AS wallet_name,
         w.color AS wallet_color,
@@ -119,8 +117,8 @@ export async function getTransactions(
       description: row.description as string | null,
       receipt_url: row.receipt_url as string | null,
       created_at: row.created_at as string,
-      updated_at: row.updated_at as string,
-      deleted_at: row.deleted_at as string | null,
+      updated_at: (row.created_at as string) || "",
+      deleted_at: null,
       // Joined fields
       wallet_name: (row.wallet_name as string) ?? undefined,
       wallet_color: (row.wallet_color as string) ?? undefined,

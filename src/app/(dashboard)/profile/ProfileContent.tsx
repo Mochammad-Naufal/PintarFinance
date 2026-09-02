@@ -32,9 +32,10 @@ import {
   Users,
   X,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { signOut } from "@/actions/auth";
 import { joinSavingsGoalWithCode } from "@/actions/savings";
-import { updateUserProfile } from "@/actions/profile";
+import { updateUserProfile, uploadAvatar } from "@/actions/profile";
 import { useTheme } from "@/components/shared/ThemeProvider";
 import {
   type SavingsGoal,
@@ -43,10 +44,18 @@ import {
   type Wallet,
 } from "@/types/finance";
 import { calculateAge, formatCurrency, formatDate } from "@/lib/utils";
-import { compressImageToWebP } from "@/lib/imageCompressor";
+import { compressImageToWebPBlob } from "@/lib/imageCompressor";
 import { InviteMemberModal } from "@/components/modules/savings/InviteMemberModal";
 import { ExportModal } from "@/components/modules/transactions/ExportModal";
-import { FeedbackModal } from "@/components/modules/feedback/FeedbackModal";
+
+// Dynamic Code Splitting for secondary modals
+const FeedbackModal = dynamic(
+  () =>
+    import("@/components/modules/feedback/FeedbackModal").then(
+      (mod) => mod.FeedbackModal
+    ),
+  { ssr: false }
+);
 
 interface ProfileContentProps {
   user: UserProfile;
@@ -92,15 +101,39 @@ export function ProfileContent({
 
     setIsCompressing(true);
     setProfileError(null);
+    setProfileSuccess(null);
 
     try {
-      // Compress client-side to WebP (max 400px, quality 0.82)
-      const compressedWebP = await compressImageToWebP(file, {
+      // 1. Compress client-side to binary WebP Blob & File (max 400px, quality 0.82)
+      const result = await compressImageToWebPBlob(file, {
         maxDimension: 400,
         quality: 0.82,
       });
-      setEditAvatarUrl(compressedWebP);
-      setProfileSuccess("Foto berhasil dikompresi ke WebP!");
+
+      // Show immediate local preview
+      setEditAvatarUrl(result.dataUrl);
+
+      // 2. Upload binary file directly to Supabase Storage bucket 'avatars'
+      const formData = new FormData();
+      formData.append("file", result.file);
+
+      const uploadRes = await uploadAvatar(formData);
+      if (uploadRes.success && uploadRes.data) {
+        setEditAvatarUrl(uploadRes.data.publicUrl);
+        setUser((prev) => ({ ...prev, avatar_url: uploadRes.data!.publicUrl }));
+        setProfileSuccess("Foto profil berhasil dikompresi & disimpan ke storage!");
+
+        // Real-time synchronization to Header & AppShell
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("user-profile-updated", {
+              detail: { ...user, avatar_url: uploadRes.data.publicUrl },
+            })
+          );
+        }
+      } else {
+        setProfileError(uploadRes.error || "Gagal mengunggah foto profil ke storage.");
+      }
     } catch (err: any) {
       setProfileError(err?.message || "Gagal memproses dan mengompresi gambar.");
     } finally {

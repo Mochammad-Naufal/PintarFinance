@@ -28,11 +28,21 @@ import {
   payDebt,
   updateDebt,
 } from "@/actions/debts";
+import dynamic from "next/dynamic";
 import { DebtSummary } from "./DebtSummary";
 import { DebtCard } from "./DebtCard";
-import { DebtModal } from "./DebtModal";
-import { PayDebtModal } from "./PayDebtModal";
 import { DebtPaymentHistoryList } from "./DebtPaymentHistoryList";
+
+// Dynamic Code Splitting for secondary debt management modals
+const DebtModal = dynamic(
+  () => import("./DebtModal").then((mod) => mod.DebtModal),
+  { ssr: false }
+);
+
+const PayDebtModal = dynamic(
+  () => import("./PayDebtModal").then((mod) => mod.PayDebtModal),
+  { ssr: false }
+);
 import {
   addOfflineMutation,
   getOfflineData,
